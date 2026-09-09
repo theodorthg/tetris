@@ -9,7 +9,8 @@ enum State { START, PLAYING, PAUSED, OVER }
 
 const BASE := Vector2(480, 640)      ## content_scale base; the real area is read at runtime
 const PREVIEW_CELL := 12
-const HUD_H := 96.0                  ## top band that holds score / buttons / previews
+const HUD_H := 112.0                 ## top band that holds score / buttons / previews
+const HUD_BTN := 64.0                ## HUD icon-button hit area (glyph drawn smaller)
 const MARGIN := 6.0
 const MIN_CELL := 14
 const MAX_CELL := 60
@@ -97,6 +98,9 @@ func _safe_insets() -> Dictionary:
 		bottom = maxf(bottom, float(win.y - safe.end.y) * to_design)
 		left = maxf(left, float(safe.position.x) * to_design)
 		right = maxf(right, float(win.x - safe.end.x) * to_design)
+	if _touch_mode:
+		top = maxf(top, 16.0)               # clear the top-edge gesture / pull-down
+		bottom = maxf(bottom, 12.0)
 	return {"top": top, "bottom": bottom, "left": left, "right": right}
 
 
@@ -124,20 +128,21 @@ func _layout() -> void:
 	_field.position = Vector2(wx, wy)
 	_field.queue_redraw()
 
-	# HUD band, kept below the safe-area top
-	var pb := 44.0
+	# HUD band, kept below the safe-area top. The icon buttons have a generous
+	# hit area (HUD_BTN) with the glyph drawn smaller inside.
+	var pb := HUD_BTN
 	_pause_btn.size = Vector2(pb, pb)
-	_pause_btn.position = Vector2(vp.x - right - MARGIN - pb, hud_top)
+	_pause_btn.position = Vector2(vp.x - right - MARGIN - pb + 4, hud_top)
 	_hold_btn.size = Vector2(pb, pb)
-	_hold_btn.position = Vector2(area_x, hud_top)
+	_hold_btn.position = Vector2(area_x - 4, hud_top)
 	_score_label.position = Vector2(area_x, hud_top + 4)
-	_score_label.size = Vector2(area_w, 32)
-	_level_label.position = Vector2(area_x, hud_top + 40)
+	_score_label.size = Vector2(area_w, 34)
+	_level_label.position = Vector2(area_x, hud_top + 44)
 	_level_label.size = Vector2(area_w * 0.5, 20)
-	_lines_label.position = Vector2(area_x + area_w * 0.5, hud_top + 40)
+	_lines_label.position = Vector2(area_x + area_w * 0.5, hud_top + 44)
 	_lines_label.size = Vector2(area_w * 0.5, 20)
-	_hold_box = Rect2(area_x + 4, hud_top + pb + 6, 54, 42)
-	_next_box = Rect2(vp.x - right - MARGIN - 58, hud_top + pb + 6, 54, 42)
+	_hold_box = Rect2(area_x + 6, hud_top + pb - 4, 52, 40)
+	_next_box = Rect2(vp.x - right - MARGIN - 58, hud_top + pb - 4, 52, 40)
 	queue_redraw()
 
 

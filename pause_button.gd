@@ -1,11 +1,14 @@
 class_name PauseButton
 extends Control
 
-## Small frosted-glass round pause button for the HUD (mirrors pacman's).
-## Emits `tapped` on a press-release; works with touch and mouse.
+## Frosted-glass round pause button. The Control rect is the (generous) hit
+## area; the glyph is drawn smaller and centred, so a slightly-off thumb tap
+## still lands. Fires `tapped` the moment it is pressed (touch or mouse) so a
+## near-miss never turns into a game tap.
 
 signal tapped
 
+const PAD := 9.0   ## hit area is this many px wider than the drawn disc, per side
 var _down := false
 
 
@@ -17,25 +20,22 @@ func _gui_input(event: InputEvent) -> void:
 	var press: bool = (event is InputEventScreenTouch and event.pressed) \
 		or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
 	var release: bool = (event is InputEventScreenTouch and not event.pressed) \
-		or (event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
+		or (event is InputEventMouseButton and not event.pressed)
 	if press:
 		_down = true
 		queue_redraw()
-		accept_event()
-	elif release and _down:
-		_down = false
-		queue_redraw()
 		tapped.emit()
 		accept_event()
+	elif release:
+		_down = false
+		queue_redraw()
 
 
 func _draw() -> void:
 	var c := size * 0.5
-	var r := minf(size.x, size.y) * 0.5
-	# frosted disc
-	draw_circle(c, r, Color(0.85, 0.9, 1.0, 0.14 if not _down else 0.22))
-	draw_arc(c, r - 1.0, 0.0, TAU, 48, Color(1, 1, 1, 0.22), 1.5)
-	# two bars
+	var r := minf(size.x, size.y) * 0.5 - PAD
+	draw_circle(c, r, Color(0.85, 0.9, 1.0, 0.24 if _down else 0.14))
+	draw_arc(c, r - 1.0, 0.0, TAU, 48, Color(1, 1, 1, 0.24), 1.5)
 	var bw := r * 0.26
 	var bh := r * 0.86
 	var off := r * 0.30

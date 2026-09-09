@@ -34,6 +34,8 @@ var _bg: TextureRect
 var _scrim: ColorRect
 var _root: MarginContainer
 var _box: VBoxContainer
+var _panel: PanelContainer
+var _panel_style: StyleBoxFlat
 var _splash_bar: ProgressBar
 var _splash_tween: Tween
 
@@ -68,21 +70,21 @@ func _ready() -> void:
 	var center := CenterContainer.new()
 	_root.add_child(center)
 
-	var panel := PanelContainer.new()
-	var pstyle := StyleBoxFlat.new()
-	pstyle.bg_color = Color(0.06, 0.07, 0.10, 0.92)
-	pstyle.border_color = Color(1, 1, 1, 0.10)
-	pstyle.set_border_width_all(1)
-	pstyle.set_corner_radius_all(10)
-	pstyle.set_content_margin_all(22)
-	panel.add_theme_stylebox_override("panel", pstyle)
-	center.add_child(panel)
+	_panel = PanelContainer.new()
+	_panel_style = StyleBoxFlat.new()
+	_panel_style.bg_color = Color(0.06, 0.07, 0.10, 0.92)
+	_panel_style.border_color = Color(1, 1, 1, 0.10)
+	_panel_style.set_border_width_all(1)
+	_panel_style.set_corner_radius_all(10)
+	_panel_style.set_content_margin_all(22)
+	_panel.add_theme_stylebox_override("panel", _panel_style)
+	center.add_child(_panel)
 
 	_box = VBoxContainer.new()
 	_box.add_theme_constant_override("separation", 12)
 	_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	_box.custom_minimum_size = Vector2(372, 0)
-	panel.add_child(_box)
+	_panel.add_child(_box)
 
 	hide_all()
 
@@ -100,18 +102,16 @@ func show_splash() -> void:
 	_clear_box()
 	_bg.visible = true
 	_bg.modulate = Color(1, 1, 1)
-	_scrim.color = Color(0.03, 0.04, 0.06, 0.0)
+	_scrim.color = Color(0.03, 0.04, 0.06, 0.28)
+	_panel_style.bg_color = Color(0, 0, 0, 0)          # no panel box on the splash
+	_panel_style.border_color = Color(0, 0, 0, 0)
 
-	var wrap := VBoxContainer.new()
-	wrap.alignment = BoxContainer.ALIGNMENT_END
-	wrap.add_theme_constant_override("separation", 10)
-	_box.add_child(wrap)
-	_gap(300)
+	_gap(360)
 	var loading := Label.new()
 	loading.text = "Loading…"
 	loading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	loading.add_theme_font_size_override("font_size", 15)
-	loading.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
+	loading.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
 	_box.add_child(loading)
 	_splash_bar = ProgressBar.new()
 	_splash_bar.custom_minimum_size = Vector2(300, 8)
@@ -215,6 +215,8 @@ func _build() -> void:
 	_bg.visible = _screen in splash_screens
 	_bg.modulate = Color(0.6, 0.6, 0.66)
 	_scrim.color = Color(0.035, 0.045, 0.065, 0.74)
+	_panel_style.bg_color = Color(0.06, 0.07, 0.10, 0.92)
+	_panel_style.border_color = Color(1, 1, 1, 0.10)
 
 	match _screen:
 		Screen.START:
@@ -260,6 +262,8 @@ func _build_name_entry() -> void:
 	_bg.visible = true
 	_bg.modulate = Color(0.6, 0.6, 0.66)
 	_scrim.color = Color(0.035, 0.045, 0.065, 0.74)
+	_panel_style.bg_color = Color(0.06, 0.07, 0.10, 0.92)
+	_panel_style.border_color = Color(1, 1, 1, 0.10)
 	_title("NEW HIGH SCORE!", 30)
 	_label("Score  %d" % int(_pending.get("score", 0)), 18)
 	_gap(8)

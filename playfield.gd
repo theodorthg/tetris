@@ -305,9 +305,32 @@ func suggest_placement(target_col: float) -> Dictionary:
 
 	if landed.is_empty():
 		return {}
+
+	# The cursor column is honoured as WHERE the piece goes: keep only
+	# placements that actually occupy that column (widen the tolerance only if
+	# nothing does), then let the heuristic pick the ROTATION / exact fit.
+	var tc := clampi(roundi(target_col), 0, COLS - 1)
+	for tol in [0, 1, 2, COLS]:
+		var pool: Array = []
+		for l in landed:
+			if _covers_column(l[0], l[1], tc, tol):
+				pool.append(l)
+		if not pool.is_empty():
+			return _best_of(pool, target_col)
+	return _best_of(landed, target_col)
+
+
+func _covers_column(rot: int, pos: Vector2i, col: int, tol: int) -> bool:
+	for c in Pieces.CELLS[_type][rot]:
+		if absi(pos.x + c.x - col) <= tol:
+			return true
+	return false
+
+
+func _best_of(pool: Array, target_col: float) -> Dictionary:
 	var best := {}
 	var best_score := -INF
-	for l in landed:
+	for l in pool:
 		var sc := _placement_score(l[0], l[1], target_col)
 		if sc > best_score:
 			best_score = sc
@@ -317,12 +340,10 @@ func suggest_placement(target_col: float) -> Dictionary:
 
 func _placement_score(rot: int, pos: Vector2i, target_col: float) -> float:
 	var new_cells := {}
-	var piece_top := ROWS
 	var sum_x := 0.0
 	for c in Pieces.CELLS[_type][rot]:
 		var cell: Vector2i = pos + c
 		new_cells[cell] = true
-		piece_top = mini(piece_top, cell.y)
 		sum_x += cell.x
 	var center := sum_x / 4.0
 
@@ -341,9 +362,8 @@ func _placement_score(rot: int, pos: Vector2i, target_col: float) -> float:
 				seen_block = true
 			elif seen_block:
 				col_holes += 1
-		var h := ROWS - top
-		heights.append(h)
-		aggregate += h
+		heights.append(ROWS - top)
+		aggregate += ROWS - top
 		holes += col_holes
 
 	var bumpiness := 0
@@ -360,15 +380,14 @@ func _placement_score(rot: int, pos: Vector2i, target_col: float) -> float:
 		if full:
 			lines += 1
 
-	var landing_pen := float(ROWS - piece_top)   # higher stack top = worse
-	var dist := absf(center - target_col)
-
-	return 3.4 * float(lines) \
-		- 4.5 * float(holes) \
-		- 0.36 * float(aggregate) \
-		- 0.22 * float(bumpiness) \
-		- 0.55 * landing_pen \
-		- 2.8 * dist
+	# holes dominate; lines are good; filling wells (lower bumpiness) is good.
+	# height is only a gentle nudge so the assist still places tall pieces into
+	# deep gaps or against a wall when that is what fits.
+	return 4.0 * float(lines) \
+		- 6.0 * float(holes) \
+		- 0.55 * float(bumpiness) \
+		- 0.16 * float(aggregate) \
+		- 0.8 * absf(center - target_col)
 
 
 func _touch_lock_reset() -> void:

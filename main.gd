@@ -8,14 +8,22 @@ extends Node2D
 enum State { START, PLAYING, PAUSED, OVER }
 
 const DESIGN := Vector2(480, 800)
-const WELL_ORIGIN := Vector2(80, 120)
-const HOLD_BOX := Rect2(12, 20, 84, 84)
-const NEXT_BOX := Rect2(384, 20, 84, 84)
-const PREVIEW_CELL := 16
+const WELL_ORIGIN := Vector2(80, 150)
+const HOLD_BOX := Rect2(10, 80, 66, 62)
+const NEXT_BOX := Rect2(404, 80, 66, 62)
+const PREVIEW_CELL := 14
+const PAUSE_BTN := Rect2(10, 10, 88, 42)
+const HOLD_BTN := Rect2(382, 10, 88, 42)
 
 const DAS := 0.16
 const ARR := 0.03
 const LINE_SCORE := [0, 100, 300, 500, 800]
+
+# touch tuning
+const SWIPE_CELL := 26.0     ## horizontal drag px per one-cell move
+const TAP_MAX_MOVE := 18.0   ## a touch that moved less than this is a tap (rotate)
+const TAP_MAX_TIME := 0.22
+const FLICK_SPEED := 1100.0  ## downward px/s that counts as a hard-drop flick
 
 var _state: int = State.START
 var _score := 0
@@ -36,11 +44,26 @@ var _mouse_control := true
 var _mouse_active := false
 var _last_mouse_pos := Vector2.ZERO
 
+var _pause_btn: Button
+var _hold_btn: Button
+
+var _touch_mode := false
+var _touch_id := -1
+var _touch_start := Vector2.ZERO
+var _touch_time := 0.0
+var _touch_axis := 0          ## 0 undecided, 1 horizontal, 2 vertical
+var _touch_moved_cells := 0
+var _touch_is_tap := true
+var _touch_soft_drop := false
+
 
 func _ready() -> void:
+	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
 	_build()
 	_state = State.START
 	_ui.show_start()
+	if _detect_touch():
+		_enter_touch_mode()
 
 
 func _build() -> void:
@@ -55,17 +78,22 @@ func _build() -> void:
 	_field.hold_changed.connect(func(_t): queue_redraw())
 
 	_score_label = _mk_label(24)
-	_score_label.position = Vector2(110, 14)
+	_score_label.position = Vector2(110, 12)
 	_score_label.size = Vector2(260, 34)
 	add_child(_score_label)
-	_level_label = _mk_label(15)
-	_level_label.position = Vector2(108, 54)
-	_level_label.size = Vector2(130, 22)
+	_level_label = _mk_label(14)
+	_level_label.position = Vector2(108, 50)
+	_level_label.size = Vector2(130, 20)
 	add_child(_level_label)
-	_lines_label = _mk_label(15)
-	_lines_label.position = Vector2(242, 54)
-	_lines_label.size = Vector2(130, 22)
+	_lines_label = _mk_label(14)
+	_lines_label.position = Vector2(242, 50)
+	_lines_label.size = Vector2(130, 20)
 	add_child(_lines_label)
+
+	_pause_btn = _hud_button("PAUSE", PAUSE_BTN, func(): _pause())
+	_hold_btn = _hud_button("HOLD", HOLD_BTN, func(): _field.hold())
+	_pause_btn.visible = false
+	_hold_btn.visible = false
 
 	_ui = Ui.new()
 	add_child(_ui)
@@ -87,7 +115,53 @@ func _mk_label(font_size: int) -> Label:
 	return l
 
 
+func _hud_button(text: String, rect: Rect2, on_press: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.position = rect.position
+	b.size = rect.size
+	b.focus_mode = Control.FOCUS_NONE
+	b.add_theme_font_size_override("font_size", 16)
+	for state in ["normal", "hover", "pressed"]:
+		var sb := StyleBoxFlat.new()
+		var a: float = {"normal": 0.16, "hover": 0.24, "pressed": 0.34}[state]
+		sb.bg_color = Color(0.30, 0.42, 0.62, a)
+		sb.set_corner_radius_all(7)
+		b.add_theme_stylebox_override(state, sb)
+	add_child(b)
+	b.pressed.connect(on_press)
+	return b
+
+
+# --- touch detection (device-independent, like pacman) ----------------
+
+static var _touch_checked := false
+static var _touch_result := false
+
+
+func _detect_touch() -> bool:
+	if not _touch_checked:
+		_touch_checked = true
+		_touch_result = OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
+	return _touch_result
+
+
+func _enter_touch_mode() -> void:
+	if _touch_mode:
+		return
+	_touch_mode = true
+	_mouse_control = false
+	_mouse_active = false
+	if _field:
+		_field.clear_suggestion()
+
+
 # --- state --------------------------------------------------------------
+
+func _hud_buttons(vis: bool) -> void:
+	_pause_btn.visible = vis
+	_hold_btn.visible = vis
+
 
 func _start_game() -> void:
 	_start_level = int(_ui.settings.start_level)
@@ -97,7 +171,9 @@ func _start_game() -> void:
 	_level = _start_level
 	_state = State.PLAYING
 	_mouse_active = false
+	_touch_id = -1
 	_ui.hide_all()
+	_hud_buttons(true)
 	_field.fall_interval = _fall_interval_for(_level)
 	_field.start()
 	_update_hud()
@@ -108,6 +184,7 @@ func _on_top_out() -> void:
 	_state = State.OVER
 	_field.stop()
 	_field.clear_suggestion()
+	_hud_buttons(false)
 	_ui.show_game_over({"score": _score, "lines": _lines, "level": _level})
 	queue_redraw()
 
@@ -119,6 +196,8 @@ func _pause() -> void:
 	_field.set_process(false)
 	_field.clear_suggestion()
 	_mouse_active = false
+	_touch_id = -1
+	_hud_buttons(false)
 	_ui.show_pause()
 	queue_redraw()
 
@@ -128,6 +207,7 @@ func _resume() -> void:
 		return
 	_state = State.PLAYING
 	_ui.hide_all()
+	_hud_buttons(true)
 	_field.set_process(true)
 	queue_redraw()
 
@@ -169,6 +249,9 @@ func _update_hud() -> void:
 # --- input -------------------------------------------------------------
 
 func _unhandled_input(e: InputEvent) -> void:
+	if (e is InputEventScreenTouch or e is InputEventScreenDrag) and not _touch_mode:
+		_enter_touch_mode()
+
 	if e.is_action_pressed("pause_game"):
 		if _state == State.PLAYING:
 			_pause()
@@ -178,6 +261,10 @@ func _unhandled_input(e: InputEvent) -> void:
 		return
 
 	if _state != State.PLAYING:
+		return
+
+	if e is InputEventScreenTouch or e is InputEventScreenDrag:
+		_handle_touch(e)
 		return
 
 	if e.is_action_pressed("rotate_cw"):
@@ -215,6 +302,50 @@ func _use_keyboard() -> void:
 	_field.clear_suggestion()
 
 
+## Touch: swipe left/right to move (one cell per SWIPE_CELL px), swipe/hold
+## down for soft drop, a fast downward flick for hard drop, a quick tap to
+## rotate. The Pause and Hold buttons sit in the top band.
+func _handle_touch(e: InputEvent) -> void:
+	if e is InputEventScreenTouch:
+		if e.pressed:
+			_touch_id = e.index
+			_touch_start = e.position
+			_touch_time = 0.0
+			_touch_axis = 0
+			_touch_moved_cells = 0
+			_touch_is_tap = true
+			_touch_soft_drop = false
+		elif e.index == _touch_id:
+			var moved: float = (e.position - _touch_start).length()
+			if _touch_is_tap and moved < TAP_MAX_MOVE and _touch_time < TAP_MAX_TIME:
+				_field.rotate_piece(1)
+			_touch_id = -1
+			_touch_soft_drop = false
+	elif e is InputEventScreenDrag and e.index == _touch_id:
+		var d: Vector2 = e.position - _touch_start
+		if d.length() > TAP_MAX_MOVE:
+			_touch_is_tap = false
+		if _touch_axis == 0:
+			if absf(d.x) > 14.0 and absf(d.x) >= absf(d.y):
+				_touch_axis = 1
+			elif absf(d.y) > 14.0 and absf(d.y) > absf(d.x):
+				_touch_axis = 2
+		if _touch_axis == 1:
+			var want := int(d.x / SWIPE_CELL)
+			while _touch_moved_cells < want and _field.move(1):
+				_touch_moved_cells += 1
+			while _touch_moved_cells > want and _field.move(-1):
+				_touch_moved_cells -= 1
+			_touch_soft_drop = false
+		elif _touch_axis == 2:
+			if d.y > 24.0 and e.velocity.y > FLICK_SPEED:
+				_field.hard_drop()
+				_touch_id = -1
+				_touch_soft_drop = false
+			else:
+				_touch_soft_drop = d.y > 12.0
+
+
 ## Mouse scheme: the cursor column picks where the piece should go; the field
 ## finds the best-fitting rotation + landing there (tuck under overhangs) and
 ## shows it as the ghost. Wheel forces a rotation; left-click hard-drops into
@@ -229,7 +360,9 @@ func _mouse_update(screen_pos: Vector2) -> void:
 func _process(dt: float) -> void:
 	if _state != State.PLAYING:
 		return
-	_field.soft_drop_active = Input.is_action_pressed("soft_drop")
+	if _touch_id >= 0:
+		_touch_time += dt
+	_field.soft_drop_active = _touch_soft_drop or Input.is_action_pressed("soft_drop")
 
 	var dir := 0
 	if Input.is_action_pressed("move_right"):

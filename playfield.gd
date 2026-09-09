@@ -42,6 +42,9 @@ var _rng := RandomNumberGenerator.new()
 ## Mouse-assist: the suggested landing {rot,x,y} that the ghost shows and that
 ## a hard drop snaps to. Empty when the player is on keyboard/touch.
 var _suggest: Dictionary = {}
+## -1 = let the assist choose the rotation; 0..3 = rotation locked by the
+## player (mouse wheel). Reset on every new piece.
+var _rot_lock := -1
 
 
 func _ready() -> void:
@@ -104,6 +107,7 @@ func _spawn_current() -> void:
 	_fall_accum = 0.0
 	_reset_lock()
 	_suggest = {}
+	_rot_lock = -1
 	if not _valid(_type, _rot, _pos):
 		# try nudging up one (piece pokes above ceiling on spawn)
 		if _valid(_type, _rot, _pos + Vector2i(0, -1)):
@@ -250,6 +254,7 @@ func set_suggestion(s: Dictionary) -> void:
 
 
 func clear_suggestion() -> void:
+	_rot_lock = -1
 	if not _suggest.is_empty():
 		_suggest = {}
 		queue_redraw()
@@ -257,6 +262,15 @@ func clear_suggestion() -> void:
 
 func has_suggestion() -> bool:
 	return not _suggest.is_empty()
+
+
+## Mouse wheel: lock the assist to the next / previous rotation for this piece
+## (S/Z/I only have two distinct shapes but cycling 0..3 still feels right).
+func cycle_rot_lock(dir: int) -> void:
+	if not playing or _type < 0:
+		return
+	var base := _rot_lock if _rot_lock >= 0 else _rot
+	_rot_lock = posmod(base + dir, 4)
 
 
 func _occ(x: int, y: int) -> bool:
@@ -306,6 +320,16 @@ func suggest_placement(target_col: float) -> Dictionary:
 	if landed.is_empty():
 		return {}
 
+	# If the player locked a rotation with the wheel, only keep that one
+	# (fall back to all if it can't be reached).
+	if _rot_lock >= 0:
+		var locked: Array = []
+		for l in landed:
+			if l[0] == _rot_lock:
+				locked.append(l)
+		if not locked.is_empty():
+			landed = locked
+
 	# The cursor column is honoured as WHERE the piece goes: keep only
 	# placements that actually occupy that column (widen the tolerance only if
 	# nothing does), then let the heuristic pick the ROTATION / exact fit.
@@ -341,11 +365,16 @@ func _best_of(pool: Array, target_col: float) -> Dictionary:
 func _placement_score(rot: int, pos: Vector2i, target_col: float) -> float:
 	var new_cells := {}
 	var sum_x := 0.0
+	var pmin_y := ROWS
+	var pmax_y := -ROWS
 	for c in Pieces.CELLS[_type][rot]:
 		var cell: Vector2i = pos + c
 		new_cells[cell] = true
 		sum_x += cell.x
+		pmin_y = mini(pmin_y, cell.y)
+		pmax_y = maxi(pmax_y, cell.y)
 	var center := sum_x / 4.0
+	var piece_span_y := pmax_y - pmin_y   # 0 for a flat I, 3 for a vertical I
 
 	var heights: Array = []
 	var aggregate := 0
@@ -381,12 +410,14 @@ func _placement_score(rot: int, pos: Vector2i, target_col: float) -> float:
 			lines += 1
 
 	# holes dominate; lines are good; filling wells (lower bumpiness) is good.
-	# height is only a gentle nudge so the assist still places tall pieces into
-	# deep gaps or against a wall when that is what fits.
+	# a small "lie flat" nudge (piece_span_y) keeps long pieces horizontal
+	# unless a vertical fit clearly wins on holes/bumpiness; height stays a
+	# gentle nudge so deep gap-fills against a wall aren't rejected for height.
 	return 4.0 * float(lines) \
 		- 6.0 * float(holes) \
 		- 0.55 * float(bumpiness) \
 		- 0.16 * float(aggregate) \
+		- 0.45 * float(piece_span_y) \
 		- 0.8 * absf(center - target_col)
 
 

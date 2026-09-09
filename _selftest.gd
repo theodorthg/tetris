@@ -96,6 +96,19 @@ func _init() -> void:
 	fails += _expect(not w.is_empty() and w.rot in [1, 3],
 		"I piece fills a deep well vertically (rot=%s)" % (w.get("rot", "none")))
 
+	# mouse wheel locks the rotation the assist may use
+	pf._reset_grid()
+	pf.playing = true
+	pf._type = Pieces.I
+	pf._rot = 0
+	pf._pos = Vector2i(3, 0)
+	pf.cycle_rot_lock(1)                     # -> lock rotation 1 (vertical I)
+	var lk := pf.suggest_placement(4.0)
+	fails += _expect(not lk.is_empty() and lk.rot == 1,
+		"wheel-locked rotation is honoured (rot=%s)" % lk.get("rot", "none"))
+	pf.clear_suggestion()
+	fails += _expect(pf._rot_lock == -1, "rotation lock clears with the suggestion")
+
 	print("SELFTEST: %s (%d failure(s))" % ["PASS" if fails == 0 else "FAIL", fails])
 	quit(fails)
 

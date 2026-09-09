@@ -204,10 +204,19 @@ func _unhandled_input(e: InputEvent) -> void:
 	elif e.is_action_pressed("hold_piece"):
 		_field.hold()
 	elif e is InputEventMouseButton and e.pressed:
-		if e.button_index == MOUSE_BUTTON_LEFT:
-			_field.hard_drop()
-		elif e.button_index == MOUSE_BUTTON_RIGHT:
-			_field.hold()
+		match e.button_index:
+			MOUSE_BUTTON_LEFT:
+				_field.hard_drop()
+			MOUSE_BUTTON_RIGHT:
+				_field.hold()
+			MOUSE_BUTTON_WHEEL_UP:
+				_mouse_active = true
+				_field.cycle_rot_lock(1)
+				_mouse_update(_last_mouse_pos)
+			MOUSE_BUTTON_WHEEL_DOWN:
+				_mouse_active = true
+				_field.cycle_rot_lock(-1)
+				_mouse_update(_last_mouse_pos)
 	elif e is InputEventMouseMotion and _mouse_control:
 		_mouse_active = true
 		_last_mouse_pos = e.position

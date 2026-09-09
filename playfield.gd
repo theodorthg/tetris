@@ -12,6 +12,7 @@ signal next_changed(queue: Array)
 signal topped_out
 signal soft_drop_cell          ## one row gained by holding soft-drop (score +1)
 signal hard_dropped(rows: int) ## distance of a hard drop (score +2 per row)
+signal piece_spawned           ## a new active piece is in play
 
 const COLS := 10
 const ROWS := 20
@@ -118,6 +119,7 @@ func _spawn_current() -> void:
 			topped_out.emit()
 			queue_redraw()
 			return
+	piece_spawned.emit()
 	queue_redraw()
 
 

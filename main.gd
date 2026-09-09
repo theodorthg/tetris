@@ -56,9 +56,12 @@ var _touch_id := -1
 var _touch_start := Vector2.ZERO
 var _touch_time := 0.0
 var _touch_axis := 0           ## 0 undecided, 1 horizontal, 2 vertical
-var _touch_moved_cells := 0
 var _touch_is_tap := true
 var _touch_soft_drop := false
+## Abstract 0..COLS-1 aim column for touch — decoupled from the piece footprint
+## so a wide horizontal I can still be aimed at column 0 / 9 for a vertical drop.
+var _touch_col := 4
+var _touch_start_col := 4
 var _last_tap_time := -1.0
 var _last_tap_pos := Vector2.ZERO
 var _pending_drop := false
@@ -119,6 +122,7 @@ func _build() -> void:
 	_field.topped_out.connect(_on_top_out)
 	_field.next_changed.connect(func(_q): queue_redraw())
 	_field.hold_changed.connect(func(_t): queue_redraw())
+	_field.piece_spawned.connect(_on_piece_spawned)
 
 	_score_label = _mk_label(22)
 	add_child(_score_label)
@@ -351,12 +355,33 @@ func _swipe_px() -> float:
 	return maxf(_field.cell * 0.8, 14.0)
 
 
+func _on_piece_spawned() -> void:
+	if not _touch_mode:
+		return
+	_touch_col = clampi(_field.piece_left_col() + int(_field.piece_width() / 2.0), 0, Playfield.COLS - 1)
+	_touch_refresh_suggest()
+
+
 func _touch_refresh_suggest() -> void:
 	if _field.piece_left_col() < 0:
 		_field.set_suggestion({})
 		return
-	var centre := _field.piece_left_col() + (_field.piece_width() - 1) * 0.5
-	_field.set_suggestion(_field.suggest_placement(centre))
+	_field.set_suggestion(_field.suggest_placement(float(_touch_col)))
+
+
+## Slide the actual piece as close to the abstract aim column as its footprint
+## allows (the ghost / hard-drop still use the full aim column).
+func _touch_follow_col() -> void:
+	var half := int(_field.piece_width() / 2.0)
+	var target_left := _touch_col - half
+	var cur := _field.piece_left_col()
+	var guard := 0
+	while cur != target_left and guard < Playfield.COLS:
+		var step := signi(target_left - cur)
+		if not _field.move(step):
+			break
+		cur += step
+		guard += 1
 
 
 func _handle_touch(e: InputEvent) -> void:
@@ -367,7 +392,7 @@ func _handle_touch(e: InputEvent) -> void:
 				_touch_start = e.position
 				_touch_time = 0.0
 				_touch_axis = 0
-				_touch_moved_cells = 0
+				_touch_start_col = _touch_col
 				_touch_is_tap = true
 				_touch_soft_drop = false
 		elif e.index == _touch_id:
@@ -387,14 +412,10 @@ func _handle_touch(e: InputEvent) -> void:
 				_touch_axis = 2
 		if _touch_axis == 1:
 			var want := int(d.x / _swipe_px())
-			var changed := false
-			while _touch_moved_cells < want and _field.move(1):
-				_touch_moved_cells += 1
-				changed = true
-			while _touch_moved_cells > want and _field.move(-1):
-				_touch_moved_cells -= 1
-				changed = true
-			if changed:
+			var new_col := clampi(_touch_start_col + want, 0, Playfield.COLS - 1)
+			if new_col != _touch_col:
+				_touch_col = new_col
+				_touch_follow_col()
 				_touch_refresh_suggest()
 			_touch_soft_drop = false
 		elif _touch_axis == 2:
@@ -447,9 +468,6 @@ func _process(dt: float) -> void:
 				_touch_refresh_suggest()
 
 	_field.soft_drop_active = _touch_soft_drop or Input.is_action_pressed("soft_drop")
-
-	if _touch_mode and _touch_id < 0 and not _pending_drop:
-		_touch_refresh_suggest()
 
 	var dir := 0
 	if Input.is_action_pressed("move_right"):

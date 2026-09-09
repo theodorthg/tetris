@@ -67,20 +67,22 @@ func _init() -> void:
 				fills_gap = true
 		fails += _expect(fills_gap, "suggested placement fills the floor gap at col 2")
 
-	# edge columns must be selectable by the mouse assist
-	for want_col in [0, Playfield.COLS - 1]:
-		pf._reset_grid()
-		pf.playing = true
-		pf._type = Pieces.L
-		pf._rot = 0
-		pf._pos = Vector2i(Pieces.SPAWN_X[Pieces.L], 0)
-		var e := pf.suggest_placement(float(want_col))
-		var covers := false
-		if not e.is_empty():
-			for cc in pf._cells(pf._type, e.rot, Vector2i(e.x, e.y)):
-				if cc.x == want_col:
-					covers = true
-		fails += _expect(covers, "L piece can be aimed at edge column %d" % want_col)
+	# edge columns must be selectable by the assist (L and the wide I piece —
+	# the I from its horizontal spawn must reach a vertical drop at col 0 / 9)
+	for pt in [Pieces.L, Pieces.I]:
+		for want_col in [0, Playfield.COLS - 1]:
+			pf._reset_grid()
+			pf.playing = true
+			pf._type = pt
+			pf._rot = 0
+			pf._pos = Vector2i(Pieces.SPAWN_X[pt], 0)
+			var e := pf.suggest_placement(float(want_col))
+			var covers := false
+			if not e.is_empty():
+				for cc in pf._cells(pf._type, e.rot, Vector2i(e.x, e.y)):
+					if cc.x == want_col:
+						covers = true
+			fails += _expect(covers, "%s piece can be aimed at edge column %d" % [Pieces.NAMES[pt], want_col])
 
 	# deep 1-wide well: pointing at it should pick a vertical fill, not a flat rest
 	pf._reset_grid()

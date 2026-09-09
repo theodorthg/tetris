@@ -81,35 +81,63 @@ func _ready() -> void:
 
 # --- responsive layout ------------------------------------------------
 
+## Safe-area insets (design units): keep the HUD clear of a notch / selfie
+## camera / status bar / gesture bar. Falls back to a small fixed pad.
+func _safe_insets() -> Dictionary:
+	var vp := get_viewport_rect().size
+	var win := Vector2(DisplayServer.window_get_size())
+	var top := 8.0
+	var bottom := 6.0
+	var left := 0.0
+	var right := 0.0
+	if win.x > 0 and win.y > 0:
+		var to_design := vp.x / win.x            # uniform under ASPECT_EXPAND
+		var safe := DisplayServer.get_display_safe_area()
+		top = maxf(top, float(safe.position.y) * to_design)
+		bottom = maxf(bottom, float(win.y - safe.end.y) * to_design)
+		left = maxf(left, float(safe.position.x) * to_design)
+		right = maxf(right, float(win.x - safe.end.x) * to_design)
+	return {"top": top, "bottom": bottom, "left": left, "right": right}
+
+
 func _layout() -> void:
 	if _field == null:
 		return
 	var vp := get_viewport_rect().size
-	var bw := vp.x - 2.0 * MARGIN
-	var bh := vp.y - HUD_H - 2.0 * MARGIN
-	var cell := int(clampf(floorf(minf(bw / Playfield.COLS, bh / Playfield.ROWS)), MIN_CELL, MAX_CELL))
+	var s := _safe_insets()
+	var top: float = s.top
+	var bottom: float = s.bottom
+	var left: float = s.left
+	var right: float = s.right
+	var area_x := left + MARGIN
+	var area_w := vp.x - left - right - 2.0 * MARGIN
+	var hud_top := top + MARGIN
+	var board_top := hud_top + HUD_H
+
+	var bh := vp.y - board_top - bottom - MARGIN
+	var cell := int(clampf(floorf(minf(area_w / Playfield.COLS, bh / Playfield.ROWS)), MIN_CELL, MAX_CELL))
 	_field.cell = cell
 	var board_w := cell * Playfield.COLS
 	var board_h := cell * Playfield.ROWS
-	var wx := roundf((vp.x - board_w) * 0.5)
-	var wy := roundf(HUD_H + maxf(0.0, vp.y - HUD_H - board_h) * 0.42)
+	var wx := roundf(left + (vp.x - left - right - board_w) * 0.5)
+	var wy := roundf(board_top + maxf(0.0, vp.y - board_top - bottom - board_h) * 0.42)
 	_field.position = Vector2(wx, wy)
 	_field.queue_redraw()
 
-	# HUD band, anchored to the top of the screen
+	# HUD band, kept below the safe-area top
 	var pb := 44.0
 	_pause_btn.size = Vector2(pb, pb)
-	_pause_btn.position = Vector2(vp.x - MARGIN - pb, MARGIN)
+	_pause_btn.position = Vector2(vp.x - right - MARGIN - pb, hud_top)
 	_hold_btn.size = Vector2(86, 34)
-	_hold_btn.position = Vector2(MARGIN, MARGIN + 3)
-	_score_label.position = Vector2(0, 6)
-	_score_label.size = Vector2(vp.x, 30)
-	_level_label.position = Vector2(0, 40)
-	_level_label.size = Vector2(vp.x * 0.5, 18)
-	_lines_label.position = Vector2(vp.x * 0.5, 40)
-	_lines_label.size = Vector2(vp.x * 0.5, 18)
-	_hold_box = Rect2(MARGIN, MARGIN + 40, 60, 46)
-	_next_box = Rect2(vp.x - MARGIN - 60, MARGIN + 40, 60, 46)
+	_hold_btn.position = Vector2(area_x, hud_top + 3)
+	_score_label.position = Vector2(area_x, hud_top + 2)
+	_score_label.size = Vector2(area_w, 30)
+	_level_label.position = Vector2(area_x, hud_top + 36)
+	_level_label.size = Vector2(area_w * 0.5, 18)
+	_lines_label.position = Vector2(area_x + area_w * 0.5, hud_top + 36)
+	_lines_label.size = Vector2(area_w * 0.5, 18)
+	_hold_box = Rect2(area_x, hud_top + 42, 60, 46)
+	_next_box = Rect2(vp.x - right - MARGIN - 60, hud_top + 42, 60, 46)
 	queue_redraw()
 
 

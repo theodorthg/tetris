@@ -24,6 +24,7 @@ const _DOWN := Vector2i(0, 1)
 var fall_interval: float = 1.0   ## seconds per row; set by main per level
 var soft_drop_active := false
 var playing := false
+var ghost_enabled := true
 
 var _grid: Array = []            ## _grid[row][col] -> -1 empty, else piece type
 var _bag: Array = []
@@ -521,7 +522,8 @@ func _draw() -> void:
 		if _suggest.has("y"):
 			g_rot = _suggest.rot
 			g_pos = Vector2i(_suggest.x, _suggest.y)
-		if g_rot != _rot or g_pos != _pos:
+		var show_ghost := ghost_enabled or _suggest.has("y")
+		if show_ghost and (g_rot != _rot or g_pos != _pos):
 			for cc in Pieces.CELLS[_type][g_rot]:
 				var gc: Vector2i = g_pos + cc
 				if gc.y >= 0:

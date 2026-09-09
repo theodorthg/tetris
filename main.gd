@@ -2,9 +2,8 @@ class_name Main
 extends Node2D
 
 ## Round coordinator: owns score / level / lines / fall speed and the game
-## state machine, wires the playfield to the HUD and the (milestone-2) menus,
-## and routes keyboard + mouse + gamepad input to the playfield. Touch is added
-## in milestone 2.
+## state machine, wires the playfield to the HUD and the menu screens (ui.gd),
+## and routes keyboard + mouse + gamepad input to the playfield. Touch: later.
 
 enum State { START, PLAYING, PAUSED, OVER }
 
@@ -25,12 +24,10 @@ var _level := 1
 var _start_level := 1
 
 var _field: Playfield
+var _ui: Ui
 var _score_label: Label
 var _level_label: Label
 var _lines_label: Label
-var _msg_title: Label
-var _msg_sub: Label
-var _overlay: ColorRect
 
 var _das_dir := 0
 var _das_time := 0.0
@@ -42,7 +39,8 @@ var _last_mouse_pos := Vector2.ZERO
 
 func _ready() -> void:
 	_build()
-	_show_start()
+	_state = State.START
+	_ui.show_start()
 
 
 func _build() -> void:
@@ -56,62 +54,50 @@ func _build() -> void:
 	_field.next_changed.connect(func(_q): queue_redraw())
 	_field.hold_changed.connect(func(_t): queue_redraw())
 
-	_score_label = _mk_label(24, HORIZONTAL_ALIGNMENT_CENTER)
+	_score_label = _mk_label(24)
 	_score_label.position = Vector2(110, 14)
 	_score_label.size = Vector2(260, 34)
 	add_child(_score_label)
-	_level_label = _mk_label(15, HORIZONTAL_ALIGNMENT_CENTER)
+	_level_label = _mk_label(15)
 	_level_label.position = Vector2(108, 54)
 	_level_label.size = Vector2(130, 22)
 	add_child(_level_label)
-	_lines_label = _mk_label(15, HORIZONTAL_ALIGNMENT_CENTER)
+	_lines_label = _mk_label(15)
 	_lines_label.position = Vector2(242, 54)
 	_lines_label.size = Vector2(130, 22)
 	add_child(_lines_label)
 
-	_overlay = ColorRect.new()
-	_overlay.color = Color(0.03, 0.04, 0.06, 0.82)
-	_overlay.size = DESIGN
-	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_overlay)
-	_msg_title = _mk_label(40, HORIZONTAL_ALIGNMENT_CENTER)
-	_msg_title.position = Vector2(0, 292)
-	_msg_title.size = Vector2(DESIGN.x, 56)
-	_overlay.add_child(_msg_title)
-	_msg_sub = _mk_label(16, HORIZONTAL_ALIGNMENT_CENTER)
-	_msg_sub.position = Vector2(24, 366)
-	_msg_sub.size = Vector2(DESIGN.x - 48, 200)
-	_overlay.add_child(_msg_sub)
+	_ui = Ui.new()
+	add_child(_ui)
+	_ui.play_pressed.connect(_start_game)
+	_ui.resume_pressed.connect(_resume)
+	_ui.restart_pressed.connect(_start_game)
+	_ui.quit_pressed.connect(func(): get_tree().quit())
+	_ui.settings_changed.connect(_on_settings_changed)
 
 	_update_hud()
 
 
-func _mk_label(font_size: int, align: int) -> Label:
+func _mk_label(font_size: int) -> Label:
 	var l := Label.new()
 	l.add_theme_font_size_override("font_size", font_size)
-	l.horizontal_alignment = align
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return l
 
 
 # --- state --------------------------------------------------------------
 
-func _show_start() -> void:
-	_state = State.START
-	_overlay.visible = true
-	_msg_title.text = "TETRIS"
-	_msg_sub.text = "Press any key, click or tap to start\n\nMove:  Arrows / A D  ·  or mouse left/right\nRotate:  Up / X / Z  ·  or mouse up/down\nSoft drop:  Down / S\nHard drop:  Space  ·  or left-click\nHold:  C / End  ·  or right-click\nPause:  Esc / P"
-	queue_redraw()
-
-
 func _start_game() -> void:
+	_start_level = int(_ui.settings.start_level)
+	_field.ghost_enabled = bool(_ui.settings.ghost)
 	_score = 0
 	_lines = 0
 	_level = _start_level
 	_state = State.PLAYING
-	_overlay.visible = false
+	_mouse_active = false
+	_ui.hide_all()
 	_field.fall_interval = _fall_interval_for(_level)
 	_field.start()
 	_update_hud()
@@ -121,24 +107,35 @@ func _start_game() -> void:
 func _on_top_out() -> void:
 	_state = State.OVER
 	_field.stop()
-	_overlay.visible = true
-	_msg_title.text = "GAME OVER"
-	_msg_sub.text = "Score %d   ·   Lines %d   ·   Level %d\n\nPress any key, click or tap to continue" % [_score, _lines, _level]
+	_field.clear_suggestion()
+	_ui.show_game_over({"score": _score, "lines": _lines, "level": _level})
 	queue_redraw()
 
 
-func _toggle_pause() -> void:
-	if _state == State.PLAYING:
-		_state = State.PAUSED
-		_field.set_process(false)
-		_overlay.visible = true
-		_msg_title.text = "PAUSED"
-		_msg_sub.text = "Press Esc or click to resume"
-	elif _state == State.PAUSED:
-		_state = State.PLAYING
-		_field.set_process(true)
-		_overlay.visible = false
+func _pause() -> void:
+	if _state != State.PLAYING:
+		return
+	_state = State.PAUSED
+	_field.set_process(false)
+	_field.clear_suggestion()
+	_mouse_active = false
+	_ui.show_pause()
 	queue_redraw()
+
+
+func _resume() -> void:
+	if _state != State.PAUSED:
+		return
+	_state = State.PLAYING
+	_ui.hide_all()
+	_field.set_process(true)
+	queue_redraw()
+
+
+func _on_settings_changed(cfg: Dictionary) -> void:
+	_field.ghost_enabled = bool(cfg.get("ghost", true))
+	if _state != State.PLAYING:
+		_start_level = int(cfg.get("start_level", 1))
 
 
 # --- scoring -----------------------------------------------------------
@@ -172,25 +169,15 @@ func _update_hud() -> void:
 # --- input -------------------------------------------------------------
 
 func _unhandled_input(e: InputEvent) -> void:
-	if _state == State.START or _state == State.OVER:
-		if (e is InputEventKey and e.pressed and not e.echo) \
-		or (e is InputEventMouseButton and e.pressed) \
-		or (e is InputEventScreenTouch and e.pressed) \
-		or (e is InputEventJoypadButton and e.pressed):
-			if _state == State.OVER:
-				_show_start()
-			else:
-				_start_game()
-			get_viewport().set_input_as_handled()
-		return
-
 	if e.is_action_pressed("pause_game"):
-		_toggle_pause()
+		if _state == State.PLAYING:
+			_pause()
+		elif _ui.is_open():
+			_ui.handle_back()
 		get_viewport().set_input_as_handled()
 		return
+
 	if _state != State.PLAYING:
-		if e is InputEventMouseButton and e.pressed:
-			_toggle_pause()
 		return
 
 	if e.is_action_pressed("rotate_cw"):
@@ -228,14 +215,13 @@ func _use_keyboard() -> void:
 	_field.clear_suggestion()
 
 
-## Mouse scheme (the user's spec): the cursor column picks where the piece
-## should go; the game finds the best-fitting rotation + landing there (tucking
-## under overhangs, favouring flat gap-fills) and shows it as the ghost.
-## Left-click hard-drops into that placement; right-click holds.
+## Mouse scheme: the cursor column picks where the piece should go; the field
+## finds the best-fitting rotation + landing there (tuck under overhangs) and
+## shows it as the ghost. Wheel forces a rotation; left-click hard-drops into
+## the placement; right-click holds.
 func _mouse_update(screen_pos: Vector2) -> void:
 	if _field.piece_left_col() < 0:
 		return
-	# fractional column the cursor points at (0.0 = centre of column 0)
 	var col := (screen_pos.x - WELL_ORIGIN.x) / float(Playfield.CELL) - 0.5
 	_field.set_suggestion(_field.suggest_placement(col))
 
@@ -253,7 +239,6 @@ func _process(dt: float) -> void:
 
 	if dir == 0:
 		_das_dir = 0
-		# keep the mouse suggestion current as the piece falls
 		if _mouse_active:
 			_mouse_update(_last_mouse_pos)
 		return
@@ -277,8 +262,8 @@ func _process(dt: float) -> void:
 # --- HUD previews -----------------------------------------------------
 
 func _draw() -> void:
-	_draw_preview_frame(HOLD_BOX, "HOLD")
-	_draw_preview_frame(NEXT_BOX, "NEXT")
+	_draw_preview_frame(HOLD_BOX)
+	_draw_preview_frame(NEXT_BOX)
 	if _field == null:
 		return
 	if _field.hold_type() >= 0:
@@ -288,17 +273,22 @@ func _draw() -> void:
 		_draw_piece_in_box(q[0], NEXT_BOX)
 
 
-func _draw_preview_frame(box: Rect2, _title: String) -> void:
+func _draw_preview_frame(box: Rect2) -> void:
 	draw_rect(box, Color(0.06, 0.07, 0.10, 1.0))
 	draw_rect(box, Color(1, 1, 1, 0.18), false, 1.0)
 
 
 func _draw_piece_in_box(type: int, box: Rect2) -> void:
 	var cells: Array = Pieces.CELLS[type][0]
-	var minx := 99; var maxx := -99; var miny := 99; var maxy := -99
+	var minx := 99
+	var maxx := -99
+	var miny := 99
+	var maxy := -99
 	for c in cells:
-		minx = mini(minx, c.x); maxx = maxi(maxx, c.x)
-		miny = mini(miny, c.y); maxy = maxi(maxy, c.y)
+		minx = mini(minx, c.x)
+		maxx = maxi(maxx, c.x)
+		miny = mini(miny, c.y)
+		maxy = maxi(maxy, c.y)
 	var w := (maxx - minx + 1) * PREVIEW_CELL
 	var h := (maxy - miny + 1) * PREVIEW_CELL
 	var origin := box.position + (box.size - Vector2(w, h)) * 0.5

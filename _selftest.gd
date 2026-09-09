@@ -109,6 +109,18 @@ func _init() -> void:
 	pf.clear_suggestion()
 	fails += _expect(pf._rot_lock == -1, "rotation lock clears with the suggestion")
 
+	# hall of fame: keeps the top 10 by score, qualification check
+	var ui := Ui.new()
+	ui._hof = []
+	for i in 12:
+		ui._insert_hof({"name": "P%d" % i, "score": i * 100, "lines": 0, "level": 1})
+	fails += _expect(ui._hof.size() == Ui.HOF_MAX, "hall of fame capped at 10")
+	fails += _expect(int(ui._hof[0].score) == 1100, "hall of fame sorted desc (top=%d)" % int(ui._hof[0].score))
+	fails += _expect(ui._qualifies(5000), "a big score qualifies")
+	fails += _expect(not ui._qualifies(50), "a tiny score does not qualify once the board is full")
+	fails += _expect(not ui._qualifies(0), "score 0 never qualifies")
+	ui.free()
+
 	print("SELFTEST: %s (%d failure(s))" % ["PASS" if fails == 0 else "FAIL", fails])
 	quit(fails)
 

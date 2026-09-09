@@ -1,9 +1,48 @@
-# CLAUDE.md
+# CLAUDE.md — Tetris
+
+Ergänzt die übergeordnete `CLAUDE.md` unter
+`~/GodotDev/learn_2d_gamedev_godot_4_0.57.0_linux/`.
+
+## Aufbau
+
+- Godot 4.7, fast alles im Code. Eine winzige `main.tscn` (nur `Main`/Node2D).
+- `pieces.gd` — statische Tetromino-Daten (4 SRS-Zustände, Kick-Tabellen, Farben).
+- `playfield.gd` — 10×20-Well, aktiver Stein, Gravity/Lock, Line-Clear,
+  Ghost, Rendering, **Maus-Platzierungs-Suche** (`suggest_placement`).
+- `main.gd` — Score/Level/Lines/Fall-Speed, State-Machine, Input-Routing, HUD.
+- `ui.gd` — alle Menü-Screens (CanvasLayer, im Code): Start / Pause /
+  Settings (+ Sound-Unterseite) / How to Play / Game Over + Hall of Fame.
+- `_selftest.gd` — Headless-Checks: `godot --headless --path . --script res://_selftest.gd`
+
+## Design-Entscheidungen
+
+- **Canvas** 480×800 Portrait, Zelle 32 px, Well bei (80,120). HUD-Band oben
+  (Score/Level/Lines, Hold links, Next rechts).
+- **Steuerung**: Tastatur (Pfeile/WASD, X/Z drehen, Space Hard-Drop, C/End
+  Hold, Esc/P Pause) · Gamepad · **Maus**: Cursor-Spalte = Ziel, das Spiel
+  fittet Drehung+Landung dorthin (BFS + Heuristik, tuckt unter Überhänge),
+  Ghost zeigt es; Mausrad = Drehung erzwingen, Linksklick Hard-Drop,
+  Rechtsklick Hold.
+- **Scoring**: 100/300/500/800 ×Level, Soft-Drop +1/Zeile, Hard-Drop +2/Zeile,
+  Level alle 10 Zeilen, Gravity `pow(0.8-(l-1)*0.007, l-1)`.
+- **Settings** (`user://settings.cfg`, Abschnitt `game`): `start_level` 1–15,
+  `ghost` on/off. Abschnitt `sound` reserviert (Sounds kommen später).
+- **Hall of Fame** (`user://hall_of_fame.cfg`): Top 10 nach Score, Namenseingabe
+  bei Qualifikation am Ende jedes Durchlaufs.
+- **Splash**: `splash-screen.png` (Wurzel) als Boot-Splash und Start-Screen-
+  Hintergrund.
+
+## Offen / später
+
+- Touch-Steuerung + Auto-Erkennung + on-screen Pause- und **Hold**-Button
+  (Rechtsklick/End gehen auf Touch nicht).
+- `content_scale_aspect` Desktop=KEEP / Touch=KEEP_WIDTH.
+- Sounds + Sound-Settings-Unterseite mit Pro-Sound-Lautstärke.
+- Hilfetext final schreiben (aktuell Platzhalter in `ui.gd::_help_text`).
+- Politur: Line-Clear-Animation, T-Spin/Combo-Scoring, Level-Up-Feedback.
 
 ## Aseprite MCP Pro
 
-When using the Aseprite MCP Pro tools (`mcp__aseprite-mcp-pro__*`), follow the pixel art
-skill guide below (canvas proportions, palette strategy, animation timing, and related
-techniques).
-
+Bei Nutzung der Aseprite-MCP-Pro-Tools (`mcp__aseprite-mcp-pro__*`) dem
+Pixel-Art-Skill-Guide folgen:
 @/home/bernd/GodotDev/learn_2d_gamedev_godot_4_0.57.0_linux/aseprite-mcp-pro-server/skills.md

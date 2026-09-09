@@ -39,7 +39,7 @@ var _score_label: Label
 var _level_label: Label
 var _lines_label: Label
 var _pause_btn: PauseButton
-var _hold_btn: Button
+var _hold_btn: HoldButton
 
 var _hold_box := Rect2()
 var _next_box := Rect2()
@@ -128,16 +128,16 @@ func _layout() -> void:
 	var pb := 44.0
 	_pause_btn.size = Vector2(pb, pb)
 	_pause_btn.position = Vector2(vp.x - right - MARGIN - pb, hud_top)
-	_hold_btn.size = Vector2(86, 34)
-	_hold_btn.position = Vector2(area_x, hud_top + 3)
-	_score_label.position = Vector2(area_x, hud_top + 2)
-	_score_label.size = Vector2(area_w, 30)
-	_level_label.position = Vector2(area_x, hud_top + 36)
-	_level_label.size = Vector2(area_w * 0.5, 18)
-	_lines_label.position = Vector2(area_x + area_w * 0.5, hud_top + 36)
-	_lines_label.size = Vector2(area_w * 0.5, 18)
-	_hold_box = Rect2(area_x, hud_top + 42, 60, 46)
-	_next_box = Rect2(vp.x - right - MARGIN - 60, hud_top + 42, 60, 46)
+	_hold_btn.size = Vector2(pb, pb)
+	_hold_btn.position = Vector2(area_x, hud_top)
+	_score_label.position = Vector2(area_x, hud_top + 4)
+	_score_label.size = Vector2(area_w, 32)
+	_level_label.position = Vector2(area_x, hud_top + 40)
+	_level_label.size = Vector2(area_w * 0.5, 20)
+	_lines_label.position = Vector2(area_x + area_w * 0.5, hud_top + 40)
+	_lines_label.size = Vector2(area_w * 0.5, 20)
+	_hold_box = Rect2(area_x + 4, hud_top + pb + 6, 54, 42)
+	_next_box = Rect2(vp.x - right - MARGIN - 58, hud_top + pb + 6, 54, 42)
 	queue_redraw()
 
 
@@ -152,17 +152,19 @@ func _build() -> void:
 	_field.hold_changed.connect(func(_t): queue_redraw())
 	_field.piece_spawned.connect(_on_piece_spawned)
 
-	_score_label = _mk_label(22)
+	_score_label = _mk_label(27)
 	add_child(_score_label)
-	_level_label = _mk_label(13)
+	_level_label = _mk_label(15)
 	add_child(_level_label)
-	_lines_label = _mk_label(13)
+	_lines_label = _mk_label(15)
 	add_child(_lines_label)
 
 	_pause_btn = PauseButton.new()
 	_pause_btn.tapped.connect(func(): _pause())
 	add_child(_pause_btn)
-	_hold_btn = _hud_button("HOLD", func(): _field.hold())
+	_hold_btn = HoldButton.new()
+	_hold_btn.tapped.connect(func(): _field.hold())
+	add_child(_hold_btn)
 	_pause_btn.visible = false
 	_hold_btn.visible = false
 

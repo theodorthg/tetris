@@ -1,0 +1,52 @@
+class_name HoldButton
+extends Control
+
+## Frosted-glass round HOLD button — a "swap" glyph (two opposing arrows),
+## matching PauseButton's look. Emits `tapped` on press-release; touch + mouse.
+
+signal tapped
+
+var _down := false
+
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_STOP
+
+
+func _gui_input(event: InputEvent) -> void:
+	var press: bool = (event is InputEventScreenTouch and event.pressed) \
+		or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
+	var release: bool = (event is InputEventScreenTouch and not event.pressed) \
+		or (event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
+	if press:
+		_down = true
+		queue_redraw()
+		accept_event()
+	elif release and _down:
+		_down = false
+		queue_redraw()
+		tapped.emit()
+		accept_event()
+
+
+func _draw() -> void:
+	var c := size * 0.5
+	var r := minf(size.x, size.y) * 0.5
+	draw_circle(c, r, Color(0.85, 0.9, 1.0, 0.22 if _down else 0.14))
+	draw_arc(c, r - 1.0, 0.0, TAU, 48, Color(1, 1, 1, 0.22), 1.5)
+
+	# two opposing arrows = "swap held / current"
+	var col := Color(1, 1, 1, 0.9)
+	var w := r * 0.92
+	var gap := r * 0.30
+	var head := r * 0.24
+	# top arrow, pointing left
+	var ty := c.y - gap
+	draw_line(Vector2(c.x - w * 0.5, ty), Vector2(c.x + w * 0.5, ty), col, 2.0)
+	draw_line(Vector2(c.x - w * 0.5, ty), Vector2(c.x - w * 0.5 + head, ty - head), col, 2.0)
+	draw_line(Vector2(c.x - w * 0.5, ty), Vector2(c.x - w * 0.5 + head, ty + head), col, 2.0)
+	# bottom arrow, pointing right
+	var by := c.y + gap
+	draw_line(Vector2(c.x - w * 0.5, by), Vector2(c.x + w * 0.5, by), col, 2.0)
+	draw_line(Vector2(c.x + w * 0.5, by), Vector2(c.x + w * 0.5 - head, by - head), col, 2.0)
+	draw_line(Vector2(c.x + w * 0.5, by), Vector2(c.x + w * 0.5 - head, by + head), col, 2.0)

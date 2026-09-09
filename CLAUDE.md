@@ -32,13 +32,26 @@ Ergänzt die übergeordnete `CLAUDE.md` unter
 - **Splash**: `splash-screen.png` (Wurzel) als Boot-Splash und Start-Screen-
   Hintergrund.
 
+## Touch / mobile (fertig, Commit 573d4e9)
+
+- Auto-Erkennung (`OS.has_feature("mobile")` / `DisplayServer.is_touchscreen_available()`,
+  gecacht) + retroaktiver Flip beim ersten echten Screen-Touch.
+- `content_scale_aspect` = **KEEP für alle Geräte** (nicht KEEP_WIDTH): eine
+  480×800-Canvas würde unter KEEP_WIDTH auf 3:4-Tablets abgeschnitten; das
+  breitere HUD-Band trägt die Touch-Buttons, also braucht es keinen Extraraum.
+  Bewusste Abweichung von der pacman-Design-Regel.
+- Swipe: h-Drag = Bewegen (1 Zelle / 26 px), gedrückt-nach-unten = Soft-Drop,
+  schneller Flick nach unten = Hard-Drop, kurzer Tipp = Drehen.
+- On-screen **PAUSE** (links oben) und **HOLD** (rechts oben) im festen Band,
+  ausgeblendet bei offenem Menü / Game Over.
+
 ## Offen / später
 
-- Touch-Steuerung + Auto-Erkennung + on-screen Pause- und **Hold**-Button
-  (Rechtsklick/End gehen auf Touch nicht).
-- `content_scale_aspect` Desktop=KEEP / Touch=KEEP_WIDTH.
 - Sounds + Sound-Settings-Unterseite mit Pro-Sound-Lautstärke.
-- Hilfetext final schreiben (aktuell Platzhalter in `ui.gd::_help_text`).
+- **Hilfe-Screen bildbasiert** (einzelne Illustrationen, per Pfeiltasten /
+  Buttons / Mausrad nach links/rechts scrollbar — wie die Steuerungs-Diagramme
+  auf play.tetris.com); erst wenn Bedienung + Logik final sind. Aktuell
+  Platzhaltertext in `ui.gd::_help_text`.
 - Politur: Line-Clear-Animation, T-Spin/Combo-Scoring, Level-Up-Feedback.
 
 ## Aseprite MCP Pro

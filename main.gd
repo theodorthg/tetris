@@ -462,8 +462,6 @@ func _process(dt: float) -> void:
 
 	if dir == 0:
 		_das_dir = 0
-		if _mouse_active:
-			_mouse_update(_last_mouse_pos)
 		return
 
 	_use_keyboard()

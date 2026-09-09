@@ -325,16 +325,28 @@ func _occ(x: int, y: int) -> bool:
 	return _grid[y][x] != -1
 
 
-## Best reachable landing for a piece aimed at `target_col`: a BFS over
-## left / right / soft-drop / rotate from the current piece state, collecting
-## every resting position, then a heuristic pick (few holes, clears lines,
-## lies low and flat, stays near the cursor column). Returns {rot,x,y} or {}.
+## Best landing for a piece aimed at `target_col`: a BFS over
+## left / right / soft-drop / rotate collecting every resting position, then a
+## heuristic pick (few holes, clears lines, lies low and flat, stays near the
+## cursor column). Returns {rot,x,y} or {}.
+## The BFS starts from the TOP (canonical spawn) — not the piece's current fall
+## position — so the result depends only on the target column and the board,
+## not on how far the piece has dropped (which would make the ghost jitter).
 func suggest_placement(target_col: float) -> Dictionary:
 	if not playing or _type < 0:
 		return {}
+	var start := Vector2i(Pieces.SPAWN_X[_type], 0)
+	var start_ok := false
+	for yy in [0, -1, -2]:
+		if _valid(_type, 0, Vector2i(start.x, yy)):
+			start.y = yy
+			start_ok = true
+			break
+	if not start_ok:
+		return {}
 	var seen := {}
-	seen[Vector3i(_pos.x, _pos.y, _rot)] = true
-	var frontier: Array = [[_rot, _pos]]
+	seen[Vector3i(start.x, start.y, 0)] = true
+	var frontier: Array = [[0, start]]
 	var landed: Array = []
 	var iterations := 0
 	while not frontier.is_empty() and iterations < 4000:

@@ -44,6 +44,29 @@ func _init() -> void:
 	fails += _expect(ok, "T piece kicks off the left wall when rotating to L")
 	fails += _expect(pf._valid(pf._type, pf._rot, pf._pos), "T ended in a legal spot")
 
+	# mouse assist: an overhang with a one-wide gap under it — the suggestion
+	# must tuck the piece into the gap (y at the floor), not rest on the lip.
+	pf._reset_grid()
+	pf.playing = true
+	var floor_row := Playfield.ROWS - 1
+	for c in Playfield.COLS:
+		if c != 2:
+			pf._grid[floor_row][c] = Pieces.L        # floor with a hole at col 2
+	pf._grid[floor_row - 1][3] = Pieces.L            # overhang lip next to the hole
+	pf._grid[floor_row - 1][4] = Pieces.L
+	pf._type = Pieces.I
+	pf._rot = 1                                       # vertical I, high up
+	pf._pos = Vector2i(1, 0)
+	var sug := pf.suggest_placement(2.0)
+	fails += _expect(not sug.is_empty(), "suggestion found for the gap column")
+	if not sug.is_empty():
+		var cells := pf._cells(pf._type, sug.rot, Vector2i(sug.x, sug.y))
+		var fills_gap := false
+		for cc in cells:
+			if cc.x == 2 and cc.y == floor_row:
+				fills_gap = true
+		fails += _expect(fills_gap, "suggested placement fills the floor gap at col 2")
+
 	print("SELFTEST: %s (%d failure(s))" % ["PASS" if fails == 0 else "FAIL", fails])
 	quit(fails)
 

@@ -19,6 +19,7 @@ const CELL := 32
 const LOCK_DELAY := 0.5
 const MAX_LOCK_RESETS := 15
 const SOFT_DROP_FACTOR := 20.0   ## soft drop is this many times normal gravity
+const _DOWN := Vector2i(0, 1)
 
 var fall_interval: float = 1.0   ## seconds per row; set by main per level
 var soft_drop_active := false
@@ -37,6 +38,10 @@ var _lock_accum := 0.0
 var _lock_resets := 0
 var _on_floor := false
 var _rng := RandomNumberGenerator.new()
+
+## Mouse-assist: the suggested landing {rot,x,y} that the ghost shows and that
+## a hard drop snaps to. Empty when the player is on keyboard/touch.
+var _suggest: Dictionary = {}
 
 
 func _ready() -> void:
@@ -98,6 +103,7 @@ func _spawn_current() -> void:
 	_pos = Vector2i(Pieces.SPAWN_X[_type], 0)
 	_fall_accum = 0.0
 	_reset_lock()
+	_suggest = {}
 	if not _valid(_type, _rot, _pos):
 		# try nudging up one (piece pokes above ceiling on spawn)
 		if _valid(_type, _rot, _pos + Vector2i(0, -1)):
@@ -154,49 +160,45 @@ func move(dx: int) -> bool:
 	return false
 
 
+## Resulting [new_rot, new_pos] after an SRS rotation with wall kicks, or []
+## if every kick is blocked. Pure — does not mutate the piece.
+func _rotated_state(type: int, rot: int, pos: Vector2i, dir: int) -> Array:
+	var nr := (rot + dir) % 4
+	if nr < 0:
+		nr += 4
+	var table = Pieces.KICKS[Pieces.kick_kind(type)]
+	var kicks: Array = table.get(rot, {}).get(nr, [Vector2i.ZERO])
+	for k in kicks:
+		var np: Vector2i = pos + Vector2i(k.x, k.y)
+		if _valid(type, nr, np):
+			return [nr, np]
+	return []
+
+
 func rotate_piece(dir: int) -> bool:
 	if not playing or _type < 0:
 		return false
-	var nr := (_rot + dir) % 4
-	if nr < 0:
-		nr += 4
-	var table = Pieces.KICKS[Pieces.kick_kind(_type)]
-	var kicks: Array = table.get(_rot, {}).get(nr, [Vector2i.ZERO])
-	for k in kicks:
-		# kick x is column (+ right), y is row-down already
-		var np := _pos + Vector2i(k.x, k.y)
-		if _valid(_type, nr, np):
-			_rot = nr
-			_pos = np
-			_touch_lock_reset()
-			queue_redraw()
-			return true
-	return false
-
-
-## Rotate toward an absolute state (0..3) by the shorter path, one legal step
-## at a time. Used by the mouse control (vertical zone -> orientation).
-func rotate_to(target: int) -> void:
-	if not playing or _type < 0:
-		return
-	target = clampi(target, 0, 3)
-	var guard := 0
-	while _rot != target and guard < 3:
-		var diff := target - _rot
-		if diff < 0:
-			diff += 4
-		var dir := 1 if diff <= 2 else -1
-		if not rotate_piece(dir):
-			return
-		guard += 1
+	var st := _rotated_state(_type, _rot, _pos, dir)
+	if st.is_empty():
+		return false
+	_rot = st[0]
+	_pos = st[1]
+	_touch_lock_reset()
+	queue_redraw()
+	return true
 
 
 func hard_drop() -> void:
 	if not playing or _type < 0:
 		return
-	var g := _ghost_pos()
-	var dist := g.y - _pos.y
-	_pos = g
+	var from_y := _pos.y
+	if _suggest.has("y") and _valid(_type, _suggest.rot, Vector2i(_suggest.x, _suggest.y)):
+		# snap to the mouse-assisted placement (may tuck under an overhang)
+		_rot = _suggest.rot
+		_pos = Vector2i(_suggest.x, _suggest.y)
+	else:
+		_pos = _ghost_pos()
+	var dist: int = maxi(_pos.y - from_y, 0)
 	if dist > 0:
 		hard_dropped.emit(dist)
 	_lock_piece()
@@ -236,6 +238,137 @@ func piece_width() -> int:
 		minx = mini(minx, c.x)
 		maxx = maxi(maxx, c.x)
 	return maxx - minx + 1
+
+
+# --- mouse placement assist -------------------------------------------
+
+func set_suggestion(s: Dictionary) -> void:
+	if s == _suggest:
+		return
+	_suggest = s
+	queue_redraw()
+
+
+func clear_suggestion() -> void:
+	if not _suggest.is_empty():
+		_suggest = {}
+		queue_redraw()
+
+
+func has_suggestion() -> bool:
+	return not _suggest.is_empty()
+
+
+func _occ(x: int, y: int) -> bool:
+	if x < 0 or x >= COLS or y >= ROWS:
+		return true
+	if y < 0:
+		return false
+	return _grid[y][x] != -1
+
+
+## Best reachable landing for a piece aimed at `target_col`: a BFS over
+## left / right / soft-drop / rotate from the current piece state, collecting
+## every resting position, then a heuristic pick (few holes, clears lines,
+## lies low and flat, stays near the cursor column). Returns {rot,x,y} or {}.
+func suggest_placement(target_col: float) -> Dictionary:
+	if not playing or _type < 0:
+		return {}
+	var seen := {}
+	seen[Vector3i(_pos.x, _pos.y, _rot)] = true
+	var frontier: Array = [[_rot, _pos]]
+	var landed: Array = []
+	var iterations := 0
+	while not frontier.is_empty() and iterations < 4000:
+		iterations += 1
+		var s = frontier.pop_back()
+		var r: int = s[0]
+		var p: Vector2i = s[1]
+		if not _valid(_type, r, p + _DOWN):
+			landed.append([r, p])
+		var moves: Array = [
+			[r, p + Vector2i(-1, 0)],
+			[r, p + Vector2i(1, 0)],
+			[r, p + _DOWN],
+		]
+		var cw := _rotated_state(_type, r, p, 1)
+		if not cw.is_empty():
+			moves.append(cw)
+		var ccw := _rotated_state(_type, r, p, -1)
+		if not ccw.is_empty():
+			moves.append(ccw)
+		for m in moves:
+			var key := Vector3i(m[1].x, m[1].y, m[0])
+			if not seen.has(key) and _valid(_type, m[0], m[1]):
+				seen[key] = true
+				frontier.append([m[0], m[1]])
+
+	if landed.is_empty():
+		return {}
+	var best := {}
+	var best_score := -INF
+	for l in landed:
+		var sc := _placement_score(l[0], l[1], target_col)
+		if sc > best_score:
+			best_score = sc
+			best = {"rot": l[0], "x": l[1].x, "y": l[1].y}
+	return best
+
+
+func _placement_score(rot: int, pos: Vector2i, target_col: float) -> float:
+	var new_cells := {}
+	var piece_top := ROWS
+	var sum_x := 0.0
+	for c in Pieces.CELLS[_type][rot]:
+		var cell: Vector2i = pos + c
+		new_cells[cell] = true
+		piece_top = mini(piece_top, cell.y)
+		sum_x += cell.x
+	var center := sum_x / 4.0
+
+	var heights: Array = []
+	var aggregate := 0
+	var holes := 0
+	for x in COLS:
+		var top := ROWS
+		var seen_block := false
+		var col_holes := 0
+		for y in ROWS:
+			var occ: bool = _occ(x, y) or new_cells.has(Vector2i(x, y))
+			if occ:
+				if not seen_block:
+					top = y
+				seen_block = true
+			elif seen_block:
+				col_holes += 1
+		var h := ROWS - top
+		heights.append(h)
+		aggregate += h
+		holes += col_holes
+
+	var bumpiness := 0
+	for x in range(COLS - 1):
+		bumpiness += absi(heights[x] - heights[x + 1])
+
+	var lines := 0
+	for y in ROWS:
+		var full := true
+		for x in COLS:
+			if not (_occ(x, y) or new_cells.has(Vector2i(x, y))):
+				full = false
+				break
+		if full:
+			lines += 1
+
+	var landing_pen := float(ROWS - piece_top)   # higher stack top = worse
+	var dist := absf(center - target_col)
+
+	return 3.4 * float(lines) \
+		- 4.5 * float(holes) \
+		- 0.36 * float(aggregate) \
+		- 0.22 * float(bumpiness) \
+		- 0.55 * landing_pen \
+		- 2.8 * dist
 
 
 func _touch_lock_reset() -> void:
@@ -332,11 +465,15 @@ func _draw() -> void:
 				_draw_cell(c, r, Pieces.COLORS[t], 1.0)
 
 	if _type >= 0 and playing:
-		# ghost
-		var g := _ghost_pos()
-		if g != _pos:
-			for cc in Pieces.CELLS[_type][_rot]:
-				var gc: Vector2i = g + cc
+		# ghost — mouse-suggested placement if any, else straight down
+		var g_rot := _rot
+		var g_pos := _ghost_pos()
+		if _suggest.has("y"):
+			g_rot = _suggest.rot
+			g_pos = Vector2i(_suggest.x, _suggest.y)
+		if g_rot != _rot or g_pos != _pos:
+			for cc in Pieces.CELLS[_type][g_rot]:
+				var gc: Vector2i = g_pos + cc
 				if gc.y >= 0:
 					_draw_ghost_cell(gc.x, gc.y, Pieces.COLORS[_type])
 		# active piece
@@ -357,15 +494,15 @@ func _draw_cell(col: int, row: int, color: Color, alpha: float) -> void:
 		Color(1, 1, 1, 0.22))
 
 
-## Ghost outline: a bright, lightened frame plus a very faint fill so it reads
-## clearly against the well without being mistaken for a locked cell.
+## Ghost outline: a lightened frame plus a very faint fill so it reads clearly
+## against the well without being mistaken for a locked cell.
 func _draw_ghost_cell(col: int, row: int, color: Color) -> void:
 	var p := Vector2(col * CELL, row * CELL)
 	var inner := Rect2(p + Vector2(1.5, 1.5), Vector2(CELL - 3, CELL - 3))
-	var glow := color.lightened(0.35)
-	glow.a = 1.0
-	draw_rect(inner, Color(color, 0.10))
-	draw_rect(inner, glow, false, 2.5)
+	var glow := color.lightened(0.18)
+	glow.a = 0.8
+	draw_rect(inner, Color(color, 0.07))
+	draw_rect(inner, glow, false, 2.0)
 
 
 # helpers for previews (used by the HUD) -------------------------------

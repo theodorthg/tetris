@@ -36,6 +36,8 @@ var _das_dir := 0
 var _das_time := 0.0
 var _arr_time := 0.0
 var _mouse_control := true
+var _mouse_active := false
+var _last_mouse_pos := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -192,8 +194,10 @@ func _unhandled_input(e: InputEvent) -> void:
 		return
 
 	if e.is_action_pressed("rotate_cw"):
+		_use_keyboard()
 		_field.rotate_piece(1)
 	elif e.is_action_pressed("rotate_ccw"):
+		_use_keyboard()
 		_field.rotate_piece(-1)
 	elif e.is_action_pressed("hard_drop"):
 		_field.hard_drop()
@@ -205,35 +209,26 @@ func _unhandled_input(e: InputEvent) -> void:
 		elif e.button_index == MOUSE_BUTTON_RIGHT:
 			_field.hold()
 	elif e is InputEventMouseMotion and _mouse_control:
+		_mouse_active = true
+		_last_mouse_pos = e.position
 		_mouse_update(e.position)
 
 
-## Mouse scheme (play.tetris.com-ish, tuned to the user's request):
-##   horizontal position -> target column
-##   vertical position   -> target orientation (well split into 4 bands)
-##   left-click          -> hard drop     right-click -> hold
+func _use_keyboard() -> void:
+	_mouse_active = false
+	_field.clear_suggestion()
+
+
+## Mouse scheme (the user's spec): the cursor column picks where the piece
+## should go; the game finds the best-fitting rotation + landing there (tucking
+## under overhangs, favouring flat gap-fills) and shows it as the ghost.
+## Left-click hard-drops into that placement; right-click holds.
 func _mouse_update(screen_pos: Vector2) -> void:
 	if _field.piece_left_col() < 0:
 		return
-
-	# orientation from the vertical band the cursor is in
-	var well_h := float(Playfield.ROWS * Playfield.CELL)
-	var frac := (screen_pos.y - WELL_ORIGIN.y) / well_h
-	var target_rot := clampi(int(floor(frac * 4.0)), 0, 3)
-	_field.rotate_to(target_rot)
-
-	# column from the horizontal position (piece centred under the cursor)
-	var local_x := screen_pos.x - WELL_ORIGIN.x
-	var span: int = _field.piece_width()
-	var target_col := int(round(local_x / float(Playfield.CELL) - span * 0.5))
-	var cur := _field.piece_left_col()
-	var guard := 0
-	while cur != target_col and guard < Playfield.COLS:
-		var dir: int = signi(target_col - cur)
-		if not _field.move(dir):
-			break
-		cur += dir
-		guard += 1
+	# fractional column the cursor points at (0.0 = centre of column 0)
+	var col := (screen_pos.x - WELL_ORIGIN.x) / float(Playfield.CELL) - 0.5
+	_field.set_suggestion(_field.suggest_placement(col))
 
 
 func _process(dt: float) -> void:
@@ -249,7 +244,12 @@ func _process(dt: float) -> void:
 
 	if dir == 0:
 		_das_dir = 0
+		# keep the mouse suggestion current as the piece falls
+		if _mouse_active:
+			_mouse_update(_last_mouse_pos)
 		return
+
+	_use_keyboard()
 	if dir != _das_dir:
 		_das_dir = dir
 		_das_time = 0.0

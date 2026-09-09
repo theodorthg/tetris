@@ -31,6 +31,7 @@ var _hof: Array = []                    ## [{name,score,lines,level}], score-des
 var _pending: Dictionary = {}           ## last run's result while on the game-over screen
 
 var _bg: TextureRect
+var _backdrop: ColorRect
 var _scrim: ColorRect
 var _root: MarginContainer
 var _box: VBoxContainer
@@ -46,10 +47,17 @@ func _ready() -> void:
 	_load_settings()
 	_load_hof()
 
+	# black backdrop so the artwork can be shown whole (letterboxed) on it;
+	# only visible on the screens that show the artwork (start / gameover / splash)
+	_backdrop = ColorRect.new()
+	_backdrop.color = Color(0.03, 0.035, 0.05, 1.0)
+	_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_backdrop)
+
 	_bg = TextureRect.new()
 	_bg.texture = load("res://splash-screen.png")
 	_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_bg.modulate = Color(0.6, 0.6, 0.66)
 	add_child(_bg)
@@ -96,35 +104,65 @@ func hide_all() -> void:
 	visible = false
 
 
-func show_splash() -> void:
+var _splash_overlay: Control
+var _splash_then_play := false
+
+
+func show_splash(then_play := false) -> void:
 	_screen = Screen.SPLASH
+	_splash_then_play = then_play
 	visible = true
 	_clear_box()
+	_panel.visible = false
 	_bg.visible = true
+	_backdrop.visible = true
 	_bg.modulate = Color(1, 1, 1)
-	_scrim.color = Color(0.03, 0.04, 0.06, 0.28)
-	_panel_style.bg_color = Color(0, 0, 0, 0)          # no panel box on the splash
-	_panel_style.border_color = Color(0, 0, 0, 0)
+	_scrim.color = Color(0.03, 0.04, 0.06, 0.18)
 
-	_gap(360)
+	if _splash_overlay:
+		_splash_overlay.queue_free()
+	var vp := get_viewport().get_visible_rect().size
+	_splash_overlay = Control.new()
+	_splash_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_splash_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_splash_overlay)
+
+	var w := 260.0
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 8)
+	stack.size = Vector2(w, 48)
+	stack.position = Vector2((vp.x - w) * 0.5, vp.y - 104)
+	_splash_overlay.add_child(stack)
+
 	var loading := Label.new()
 	loading.text = "Loading…"
 	loading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	loading.add_theme_font_size_override("font_size", 15)
-	loading.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
-	_box.add_child(loading)
+	loading.add_theme_font_size_override("font_size", 16)
+	loading.add_theme_color_override("font_color", Color(1, 1, 1, 0.92))
+	stack.add_child(loading)
 	_splash_bar = ProgressBar.new()
-	_splash_bar.custom_minimum_size = Vector2(300, 8)
+	_splash_bar.custom_minimum_size = Vector2(w, 8)
 	_splash_bar.min_value = 0
 	_splash_bar.max_value = 100
 	_splash_bar.value = 0
 	_splash_bar.show_percentage = false
-	_box.add_child(_splash_bar)
+	stack.add_child(_splash_bar)
 
 	_splash_tween = create_tween()
 	_splash_tween.tween_property(_splash_bar, "value", 100.0, SPLASH_TIME) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	_splash_tween.tween_callback(show_start)
+	_splash_tween.tween_callback(_end_splash)
+
+
+func _end_splash() -> void:
+	if _splash_overlay:
+		_splash_overlay.queue_free()
+		_splash_overlay = null
+	if _splash_then_play:
+		_splash_then_play = false
+		play_pressed.emit()
+	else:
+		show_start()
 
 
 func _finish_splash() -> void:
@@ -132,7 +170,7 @@ func _finish_splash() -> void:
 		return
 	if _splash_tween and _splash_tween.is_valid():
 		_splash_tween.kill()
-	show_start()
+	_end_splash()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -211,8 +249,13 @@ func _clear_box() -> void:
 func _build() -> void:
 	visible = true
 	_clear_box()
+	_panel.visible = true
+	if _splash_overlay:
+		_splash_overlay.queue_free()
+		_splash_overlay = null
 	var splash_screens := [Screen.START, Screen.GAMEOVER]
 	_bg.visible = _screen in splash_screens
+	_backdrop.visible = _bg.visible
 	_bg.modulate = Color(0.6, 0.6, 0.66)
 	_scrim.color = Color(0.035, 0.045, 0.065, 0.74)
 	_panel_style.bg_color = Color(0.06, 0.07, 0.10, 0.92)
@@ -259,7 +302,9 @@ func _game_over_screen() -> void:
 func _build_name_entry() -> void:
 	visible = true
 	_clear_box()
+	_panel.visible = true
 	_bg.visible = true
+	_backdrop.visible = true
 	_bg.modulate = Color(0.6, 0.6, 0.66)
 	_scrim.color = Color(0.035, 0.045, 0.065, 0.74)
 	_panel_style.bg_color = Color(0.06, 0.07, 0.10, 0.92)

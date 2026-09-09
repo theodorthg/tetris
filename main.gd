@@ -128,21 +128,27 @@ func _layout() -> void:
 	_field.position = Vector2(wx, wy)
 	_field.queue_redraw()
 
-	# HUD band, kept below the safe-area top. The icon buttons have a generous
-	# hit area (HUD_BTN) with the glyph drawn smaller inside.
+	# HUD band: hug the board (so a wide window doesn't fling the buttons to the
+	# screen edges), but never narrower than needed for the text, and clamped
+	# on-screen. Sits just above the board — moved down with it when the board is
+	# vertically centred on a wide screen.
+	var hud_w := clampf(maxf(board_w, 300.0), 0.0, area_w)
+	var hud_x := clampf(wx + board_w * 0.5 - hud_w * 0.5, area_x, area_x + area_w - hud_w)
+	var hud_y := maxf(hud_top, wy - HUD_H)
 	var pb := HUD_BTN
-	_pause_btn.size = Vector2(pb, pb)
-	_pause_btn.position = Vector2(vp.x - right - MARGIN - pb + 4, hud_top)
 	_hold_btn.size = Vector2(pb, pb)
-	_hold_btn.position = Vector2(area_x - 4, hud_top)
-	_score_label.position = Vector2(area_x, hud_top + 4)
-	_score_label.size = Vector2(area_w, 34)
-	_level_label.position = Vector2(area_x, hud_top + 44)
-	_level_label.size = Vector2(area_w * 0.5, 20)
-	_lines_label.position = Vector2(area_x + area_w * 0.5, hud_top + 44)
-	_lines_label.size = Vector2(area_w * 0.5, 20)
-	_hold_box = Rect2(area_x + 6, hud_top + pb - 4, 52, 40)
-	_next_box = Rect2(vp.x - right - MARGIN - 58, hud_top + pb - 4, 52, 40)
+	_hold_btn.position = Vector2(hud_x - 4, hud_y)
+	_pause_btn.size = Vector2(pb, pb)
+	_pause_btn.position = Vector2(hud_x + hud_w - pb + 4, hud_y)
+	var sx := hud_x + hud_w * 0.5
+	_score_label.position = Vector2(sx - 150, hud_y + 4)
+	_score_label.size = Vector2(300, 36)
+	_level_label.position = Vector2(sx - 148, hud_y + 46)
+	_level_label.size = Vector2(140, 20)
+	_lines_label.position = Vector2(sx + 8, hud_y + 46)
+	_lines_label.size = Vector2(140, 20)
+	_hold_box = Rect2(hud_x + (pb - 52) * 0.5, hud_y + pb - 2, 52, 40)
+	_next_box = Rect2(hud_x + hud_w - pb + (pb - 52) * 0.5, hud_y + pb - 2, 52, 40)
 	queue_redraw()
 
 
@@ -177,7 +183,7 @@ func _build() -> void:
 	add_child(_ui)
 	_ui.play_pressed.connect(_start_game)
 	_ui.resume_pressed.connect(_resume)
-	_ui.restart_pressed.connect(_start_game)
+	_ui.restart_pressed.connect(_on_restart)
 	_ui.quit_pressed.connect(func(): get_tree().quit())
 	_ui.settings_changed.connect(_on_settings_changed)
 
@@ -277,6 +283,15 @@ func _pause() -> void:
 	_hud_buttons(false)
 	_ui.show_pause()
 	queue_redraw()
+
+
+func _on_restart() -> void:
+	_state = State.START
+	_field.stop()
+	_field.clear_suggestion()
+	_hud_buttons(false)
+	_pending_drop = false
+	_ui.show_splash(true)   # show the loading screen again, then start
 
 
 func _resume() -> void:

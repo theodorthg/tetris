@@ -1,0 +1,29 @@
+# Godot 4 — engine cache (regenerated on import; must NOT be committed)
+.godot/
+/android/
+.import/
+
+#export_presets.cfg
+
+# CI / local export output
+/build_ios/
+/build_macos/
+*.ipa
+*.dmg
+*.aab
+*.apk
+*.aar
+
+
+# Downloaded Godot binary / templates (Codemagic fetches these each run)
+/_godot/
+/_tpl/
+godot.zip
+templates.tpz
+
+# OS noise
+.DS_Store
+
+# NOTE: the following ARE committed on purpose — Godot needs them:
+#   *.import, *.uid, export_presets.cfg, project.godot, assets/**
+

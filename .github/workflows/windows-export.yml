@@ -1,0 +1,44 @@
+name: Windows Export
+
+on:
+  workflow_dispatch:   # nur manuell per Klick in GitHub starten
+
+jobs:
+  export-windows:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: "4.7.1"
+      GODOT_RELEASE: "4.7.1-stable"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Godot Editor (headless, Linux) herunterladen
+        run: |
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}"
+          curl -fL -o godot.zip "${BASE}/Godot_v${GODOT_RELEASE}_linux.x86_64.zip"
+          unzip -q godot.zip -d _godot
+          chmod +x _godot/Godot_v${GODOT_RELEASE}_linux.x86_64
+          echo "GODOT=$PWD/_godot/Godot_v${GODOT_RELEASE}_linux.x86_64" >> "$GITHUB_ENV"
+
+      - name: Export-Templates herunterladen
+        run: |
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}"
+          curl -fL -o templates.tpz "${BASE}/Godot_v${GODOT_RELEASE}_export_templates.tpz"
+          TPL="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$TPL"
+          unzip -q templates.tpz -d _tpl
+          mv _tpl/templates/* "$TPL/"
+
+      - name: Assets importieren
+        run: $GODOT --headless --path . --import || true
+
+      - name: Windows-Export bauen
+        run: |
+          mkdir -p build
+          $GODOT --headless --path . --export-release "Windows Desktop" build/tetris.exe
+
+      - name: Executable als Artefakt hochladen
+        uses: actions/upload-artifact@v6
+        with:
+          name: tetris-windows
+          path: build/

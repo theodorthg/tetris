@@ -1,0 +1,213 @@
+# ---------------------------------------------------------------------------
+#  Codemagic CI/CD  —  Godot 4.7.1  ->  iOS (TestFlight)  +  macOS (.dmg)
+# ---------------------------------------------------------------------------
+#  Both workflows need a paid Apple Developer Program account (99 $/year) —
+#  the App Store Connect API that automates signing/notarization is gated
+#  behind it. Nothing in here runs by itself: neither workflow has a
+#  `triggering:` block, so a `git push` never starts a build — only clicking
+#  "Start new build" in the Codemagic dashboard does. Safe to keep in the repo
+#  and ignore until you're ready to pay and set the account up.
+#
+#  Checklist for that day (see chat history for the full walkthrough):
+#    1. buy the Apple Developer Program membership
+#    2. add iOS + macOS export presets in the Godot editor (names "iOS" / "macOS")
+#    3. pick a real reverse-domain bundle id (com.example.* is rejected by Apple)
+#    4. register that bundle id + create the App Store Connect app
+#    5. create an App Store Connect API key -> add as a Codemagic integration
+#    6. (macOS only) get a "Developer ID Application" cert -> upload the .p12
+#       to Codemagic -> Code signing identities -> macOS certificates
+#    7. connect this repo to a Codemagic app (auto-detects this file)
+#    8. replace every <PLACEHOLDER> below
+#    9. Start new build -> pick "ios" or "macos"
+#
+#  Reference: https://docs.codemagic.io/yaml-quick-start/building-a-godot-app/
+# ---------------------------------------------------------------------------
+
+definitions:
+  env_versions: &env_versions
+    vars:
+      GODOT_VERSION: "4.7.1"          # must match the editor that made the project
+      GODOT_RELEASE: "4.7.1-stable"
+      GODOT_TEMPLATE_DIR_NAME: "4.7.1.stable"
+
+  scripts:
+    - &install_godot
+      name: Install Godot + export templates
+      script: |
+        set -euo pipefail
+        BASE="https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}"
+
+        echo "→ Godot editor (headless, universal macOS binary)"
+        curl -fL -o godot.zip "${BASE}/Godot_v${GODOT_RELEASE}_macos.universal.zip"
+        unzip -q godot.zip -d _godot
+        GODOT="$PWD/_godot/Godot.app/Contents/MacOS/Godot"
+        chmod +x "$GODOT"
+        echo "GODOT=$GODOT" >> "$CM_ENV"
+        "$GODOT" --headless --version
+
+        echo "→ export templates"
+        curl -fL -o templates.tpz "${BASE}/Godot_v${GODOT_RELEASE}_export_templates.tpz"
+        TPL="$HOME/Library/Application Support/Godot/export_templates/${GODOT_TEMPLATE_DIR_NAME}"
+        mkdir -p "$TPL"
+        unzip -q templates.tpz -d _tpl
+        mv _tpl/templates/* "$TPL/"
+        echo "templates:" && ls "$TPL" | head
+
+    - &godot_import
+      name: Godot – import assets (headless, warms the .godot cache)
+      script: |
+        set -uo pipefail
+        # First import can exit non-zero on transient warnings; that's fine,
+        # the export step below re-imports anything still missing.
+        "$GODOT" --headless --path "$CM_BUILD_DIR" --import || true
+
+workflows:
+
+  # =========================================================================
+  #  iOS  ->  signed .ipa  ->  TestFlight
+  #  needs: paid Apple Developer Program, App Store Connect API key
+  # =========================================================================
+  ios:
+    name: Tetris · iOS
+    max_build_duration: 60
+    instance_type: mac_mini_m2          # Apple-silicon macOS runner (has Xcode)
+    integrations:
+      app_store_connect: <ASC_API_KEY_NAME>   # name of the key you add in Codemagic
+    environment:
+      <<: *env_versions
+      vars:
+        BUNDLE_ID: "de.theodorthg.tetris"      # === Godot preset === App Store Connect
+        EXPORT_PRESET: "iOS"                   # must equal name= in export_presets.cfg
+      ios_signing:
+        distribution_type: app_store           # app_store | ad_hoc | development
+        bundle_identifier: "de.theodorthg.tetris"
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - *install_godot
+      - *godot_import
+
+      - name: Fetch signing files from App Store Connect
+        script: |
+          set -euo pipefail
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+
+      - name: Godot – export the iOS Xcode project
+        script: |
+          set -euo pipefail
+          OUT="$CM_BUILD_DIR/build_ios"
+          mkdir -p "$OUT"
+          # Godot writes an (unsigned) Xcode project next to this path.
+          "$GODOT" --headless --path "$CM_BUILD_DIR" \
+            --export-release "$EXPORT_PRESET" "$OUT/tetris.ipa" || true
+          XCPROJ=$(find "$OUT" -maxdepth 3 -name "*.xcodeproj" | head -1)
+          test -n "$XCPROJ" || { echo "no .xcodeproj was produced – check the iOS preset"; exit 1; }
+          echo "XCPROJ=$XCPROJ" >> "$CM_ENV"
+          echo "found $XCPROJ"
+
+      - name: Apply provisioning profiles to the project
+        script: |
+          set -euo pipefail
+          cd "$(dirname "$XCPROJ")"
+          xcode-project use-profiles
+
+      - name: Build & sign the IPA
+        script: |
+          set -euo pipefail
+          SCHEME=$(xcodebuild -project "$XCPROJ" -list 2>/dev/null \
+                    | awk '/Schemes:/{f=1;next} f&&NF{print $1; exit}')
+          echo "scheme = $SCHEME"
+          xcode-project build-ipa --project "$XCPROJ" --scheme "$SCHEME"
+          # --- fallback if the scheme isn't shared / build-ipa can't find it ---
+          # xcodebuild -project "$XCPROJ" -scheme "$SCHEME" -configuration Release \
+          #   -destination 'generic/platform=iOS' -allowProvisioningUpdates \
+          #   -archivePath "$CM_BUILD_DIR/build_ios/tetris.xcarchive" archive
+          # xcodebuild -exportArchive -archivePath "$CM_BUILD_DIR/build_ios/tetris.xcarchive" \
+          #   -exportPath "$CM_BUILD_DIR/build_ios/ipa" -exportOptionsPlist ./export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build_ios/**/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # beta_groups: ["Internal Testers"]
+        # submit_to_app_store: false
+
+  # =========================================================================
+  #  macOS  ->  Developer-ID-signed + notarized .dmg
+  #  needs: paid Apple Developer Program, Developer ID Application cert
+  # =========================================================================
+  macos:
+    name: Tetris · macOS
+    max_build_duration: 45
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: <ASC_API_KEY_NAME>
+    environment:
+      <<: *env_versions
+      vars:
+        EXPORT_PRESET: "macOS"
+        APP_NAME: "Tetris"
+        APPLE_TEAM_ID: "<ABCDE12345>"                    # Apple Developer "Membership" page
+        DEVELOPER_ID_CERT: "<developer_id_application>"  # reference name of the uploaded cert
+      xcode: latest
+    scripts:
+      - *install_godot
+      - *godot_import
+
+      - name: Load the Developer ID signing certificate
+        script: |
+          set -euo pipefail
+          keychain initialize
+          keychain add-certificates                       # pulls the uploaded macOS cert(s)
+          IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/')
+          test -n "$IDENTITY" || { echo "no Developer ID Application identity in the keychain"; exit 1; }
+          echo "SIGN_IDENTITY=$IDENTITY" >> "$CM_ENV"
+          echo "will sign as: $IDENTITY"
+
+      - name: Godot – export the macOS app
+        script: |
+          set -euo pipefail
+          OUT="$CM_BUILD_DIR/build_macos"
+          mkdir -p "$OUT"
+          "$GODOT" --headless --path "$CM_BUILD_DIR" \
+            --export-release "$EXPORT_PRESET" "$OUT/tetris.zip"
+          cd "$OUT"
+          unzip -q tetris.zip
+          APP=$(find . -maxdepth 1 -name "*.app" | head -1)
+          test -n "$APP" || { echo "no .app inside the export – check the macOS preset"; exit 1; }
+          echo "APP=$OUT/${APP#./}" >> "$CM_ENV"
+
+      - name: Codesign (hardened runtime) + build the DMG
+        script: |
+          set -euo pipefail
+          codesign --force --deep --options runtime --timestamp \
+            --sign "$SIGN_IDENTITY" "$APP"
+          codesign --verify --strict --verbose=2 "$APP"
+          hdiutil create -volname "$APP_NAME" -srcfolder "$APP" -ov -format UDZO \
+            "$CM_BUILD_DIR/build_macos/$APP_NAME.dmg"
+          codesign --force --timestamp --sign "$SIGN_IDENTITY" \
+            "$CM_BUILD_DIR/build_macos/$APP_NAME.dmg"
+
+      - name: Notarize + staple
+        script: |
+          set -euo pipefail
+          # Credentials come from the app_store_connect integration above.
+          KEY=$(mktemp /tmp/asc_XXXX.p8)
+          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > "$KEY"
+          xcrun notarytool submit "$CM_BUILD_DIR/build_macos/$APP_NAME.dmg" \
+            --key "$KEY" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --issuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            --wait
+          xcrun stapler staple "$CM_BUILD_DIR/build_macos/$APP_NAME.dmg"
+          rm -f "$KEY"
+    artifacts:
+      - build_macos/*.dmg

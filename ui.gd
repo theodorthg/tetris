@@ -61,10 +61,10 @@ func _ready() -> void:
 
 	_root = MarginContainer.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_root.add_theme_constant_override("margin_left", 30)
-	_root.add_theme_constant_override("margin_right", 30)
-	_root.add_theme_constant_override("margin_top", 40)
-	_root.add_theme_constant_override("margin_bottom", 40)
+	_root.add_theme_constant_override("margin_left", 14)
+	_root.add_theme_constant_override("margin_right", 14)
+	_root.add_theme_constant_override("margin_top", 30)
+	_root.add_theme_constant_override("margin_bottom", 30)
 	add_child(_root)
 
 	var center := CenterContainer.new()
@@ -83,7 +83,7 @@ func _ready() -> void:
 	_box = VBoxContainer.new()
 	_box.add_theme_constant_override("separation", 12)
 	_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	_box.custom_minimum_size = Vector2(372, 0)
+	_box.custom_minimum_size = Vector2(360, 0)
 	_panel.add_child(_box)
 
 	hide_all()

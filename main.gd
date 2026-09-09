@@ -1,31 +1,31 @@
 class_name Main
 extends Node2D
 
-## Round coordinator: owns score / level / lines / fall speed and the game
-## state machine, wires the playfield to the HUD and the menu screens (ui.gd),
-## and routes keyboard + mouse + gamepad input to the playfield. Touch: later.
+## Round coordinator: score / level / lines / fall speed, the game state machine,
+## the responsive layout, and routing keyboard + mouse + gamepad + touch input
+## to the playfield and menus (ui.gd).
 
 enum State { START, PLAYING, PAUSED, OVER }
 
-const DESIGN := Vector2(480, 640)
-const WELL_ORIGIN := Vector2(105, 100)
-const HOLD_BOX := Rect2(8, 50, 60, 44)
-const NEXT_BOX := Rect2(412, 50, 60, 44)
-const PREVIEW_CELL := 11
-const HOLD_BTN := Rect2(8, 8, 78, 36)
-const PAUSE_BTN := Rect2(422, 4, 46, 46)
-## Essential design height (HUD band + well). KEEP_WIDTH must not clip below this.
-const SAFE_H := 640.0
+const BASE := Vector2(480, 640)      ## content_scale base; the real area is read at runtime
+const PREVIEW_CELL := 12
+const HUD_H := 96.0                  ## top band that holds score / buttons / previews
+const MARGIN := 6.0
+const MIN_CELL := 14
+const MAX_CELL := 60
 
 const DAS := 0.16
 const ARR := 0.03
 const LINE_SCORE := [0, 100, 300, 500, 800]
 
-# touch tuning (design px; the swipe distance tracks the cell size)
-const SWIPE_CELL := 22.0     ## horizontal drag px per one-cell move
-const TAP_MAX_MOVE := 16.0   ## a touch that moved less than this is a tap (rotate)
-const TAP_MAX_TIME := 0.22
-const FLICK_SPEED := 1100.0  ## downward px/s that counts as a hard-drop flick
+# --- touch tuning ---
+const TAP_MAX_MOVE := 18.0     ## a touch that moves less than this (px) is a tap
+const TAP_MAX_TIME := 0.25     ## …and lasts less than this (s)
+const DOUBLE_TAP_TIME := 0.26  ## second tap within this window = double tap
+const DOUBLE_TAP_DIST := 60.0
+## true  -> single tap drops, double tap rotates (the user's stated preference)
+## false -> single tap rotates, double tap drops
+const TAP_DROPS := true
 
 var _state: int = State.START
 var _score := 0
@@ -38,6 +38,11 @@ var _ui: Ui
 var _score_label: Label
 var _level_label: Label
 var _lines_label: Label
+var _pause_btn: PauseButton
+var _hold_btn: Button
+
+var _hold_box := Rect2()
+var _next_box := Rect2()
 
 var _das_dir := 0
 var _das_time := 0.0
@@ -46,65 +51,67 @@ var _mouse_control := true
 var _mouse_active := false
 var _last_mouse_pos := Vector2.ZERO
 
-var _pause_btn: PauseButton
-var _hold_btn: Button
-## On a tall touch screen KEEP_WIDTH leaves room below the well; shift the whole
-## play area (well + HUD) down by this many design px so it sits more centred.
-var _stage_dy := 0.0
-
 var _touch_mode := false
 var _touch_id := -1
 var _touch_start := Vector2.ZERO
 var _touch_time := 0.0
-var _touch_axis := 0          ## 0 undecided, 1 horizontal, 2 vertical
+var _touch_axis := 0           ## 0 undecided, 1 horizontal, 2 vertical
 var _touch_moved_cells := 0
 var _touch_is_tap := true
 var _touch_soft_drop := false
+var _last_tap_time := -1.0
+var _last_tap_pos := Vector2.ZERO
+var _pending_drop := false
+var _pending_drop_t := 0.0
 
 
 func _ready() -> void:
+	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
 	_build()
 	_state = State.START
 	_ui.show_splash()
 	if _detect_touch():
 		_enter_touch_mode()
-	_apply_aspect()
-	get_viewport().size_changed.connect(_apply_aspect)
+	_layout()
+	get_viewport().size_changed.connect(_layout)
 
 
-## Desktop: letterbox (KEEP). Touch: fill the width (KEEP_WIDTH) so the board is
-## as large as possible — but only when the visible design height still covers
-## the HUD+well; on a near-square (wide) tablet that would clip the bottom rows,
-## so fall back to KEEP there.
-func _apply_aspect() -> void:
-	var win := Vector2(get_window().size)
-	var mode := Window.CONTENT_SCALE_ASPECT_KEEP
-	_stage_dy = 0.0
-	if _touch_mode and win.x > 0:
-		var visible_h := DESIGN.x * win.y / win.x
-		if visible_h >= SAFE_H - 1.0:
-			mode = Window.CONTENT_SCALE_ASPECT_KEEP_WIDTH
-			_stage_dy = clampf((visible_h - SAFE_H) * 0.4, 0.0, 240.0)
-	get_window().content_scale_aspect = mode
-	_relayout()
+# --- responsive layout ------------------------------------------------
 
-
-func _relayout() -> void:
+func _layout() -> void:
 	if _field == null:
 		return
-	var dy := _stage_dy
-	_field.position = WELL_ORIGIN + Vector2(0, dy)
-	_score_label.position = Vector2(100, 6 + dy)
-	_level_label.position = Vector2(96, 40 + dy)
-	_lines_label.position = Vector2(244, 40 + dy)
-	_pause_btn.position = PAUSE_BTN.position + Vector2(0, dy)
-	_hold_btn.position = HOLD_BTN.position + Vector2(0, dy)
+	var vp := get_viewport_rect().size
+	var bw := vp.x - 2.0 * MARGIN
+	var bh := vp.y - HUD_H - 2.0 * MARGIN
+	var cell := int(clampf(floorf(minf(bw / Playfield.COLS, bh / Playfield.ROWS)), MIN_CELL, MAX_CELL))
+	_field.cell = cell
+	var board_w := cell * Playfield.COLS
+	var board_h := cell * Playfield.ROWS
+	var wx := roundf((vp.x - board_w) * 0.5)
+	var wy := roundf(HUD_H + maxf(0.0, vp.y - HUD_H - board_h) * 0.42)
+	_field.position = Vector2(wx, wy)
+	_field.queue_redraw()
+
+	# HUD band, anchored to the top of the screen
+	var pb := 44.0
+	_pause_btn.size = Vector2(pb, pb)
+	_pause_btn.position = Vector2(vp.x - MARGIN - pb, MARGIN)
+	_hold_btn.size = Vector2(86, 34)
+	_hold_btn.position = Vector2(MARGIN, MARGIN + 3)
+	_score_label.position = Vector2(0, 6)
+	_score_label.size = Vector2(vp.x, 30)
+	_level_label.position = Vector2(0, 40)
+	_level_label.size = Vector2(vp.x * 0.5, 18)
+	_lines_label.position = Vector2(vp.x * 0.5, 40)
+	_lines_label.size = Vector2(vp.x * 0.5, 18)
+	_hold_box = Rect2(MARGIN, MARGIN + 40, 60, 46)
+	_next_box = Rect2(vp.x - MARGIN - 60, MARGIN + 40, 60, 46)
 	queue_redraw()
 
 
 func _build() -> void:
 	_field = Playfield.new()
-	_field.position = WELL_ORIGIN
 	add_child(_field)
 	_field.lines_cleared.connect(_on_lines_cleared)
 	_field.hard_dropped.connect(func(rows): _add_score(rows * 2))
@@ -114,24 +121,16 @@ func _build() -> void:
 	_field.hold_changed.connect(func(_t): queue_redraw())
 
 	_score_label = _mk_label(22)
-	_score_label.position = Vector2(100, 6)
-	_score_label.size = Vector2(280, 30)
 	add_child(_score_label)
 	_level_label = _mk_label(13)
-	_level_label.position = Vector2(96, 40)
-	_level_label.size = Vector2(140, 18)
 	add_child(_level_label)
 	_lines_label = _mk_label(13)
-	_lines_label.position = Vector2(244, 40)
-	_lines_label.size = Vector2(140, 18)
 	add_child(_lines_label)
 
 	_pause_btn = PauseButton.new()
-	_pause_btn.position = PAUSE_BTN.position
-	_pause_btn.size = PAUSE_BTN.size
 	_pause_btn.tapped.connect(func(): _pause())
 	add_child(_pause_btn)
-	_hold_btn = _hud_button("HOLD", HOLD_BTN, func(): _field.hold())
+	_hold_btn = _hud_button("HOLD", func(): _field.hold())
 	_pause_btn.visible = false
 	_hold_btn.visible = false
 
@@ -155,11 +154,9 @@ func _mk_label(font_size: int) -> Label:
 	return l
 
 
-func _hud_button(text: String, rect: Rect2, on_press: Callable) -> Button:
+func _hud_button(text: String, on_press: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.position = rect.position
-	b.size = rect.size
 	b.focus_mode = Control.FOCUS_NONE
 	b.add_theme_font_size_override("font_size", 16)
 	for state in ["normal", "hover", "pressed"]:
@@ -192,9 +189,6 @@ func _enter_touch_mode() -> void:
 	_touch_mode = true
 	_mouse_control = false
 	_mouse_active = false
-	if _field:
-		_field.clear_suggestion()
-	_apply_aspect()
 
 
 # --- state --------------------------------------------------------------
@@ -213,6 +207,7 @@ func _start_game() -> void:
 	_state = State.PLAYING
 	_mouse_active = false
 	_touch_id = -1
+	_pending_drop = false
 	_ui.hide_all()
 	_hud_buttons(true)
 	_field.fall_interval = _fall_interval_for(_level)
@@ -225,6 +220,7 @@ func _on_top_out() -> void:
 	_state = State.OVER
 	_field.stop()
 	_field.clear_suggestion()
+	_pending_drop = false
 	_hud_buttons(false)
 	_ui.show_game_over({"score": _score, "lines": _lines, "level": _level})
 	queue_redraw()
@@ -238,6 +234,7 @@ func _pause() -> void:
 	_field.clear_suggestion()
 	_mouse_active = false
 	_touch_id = -1
+	_pending_drop = false
 	_hud_buttons(false)
 	_ui.show_pause()
 	queue_redraw()
@@ -343,58 +340,94 @@ func _use_keyboard() -> void:
 	_field.clear_suggestion()
 
 
-## Touch: swipe left/right to move (one cell per SWIPE_CELL px), swipe/hold
-## down for soft drop, a fast downward flick for hard drop, a quick tap to
-## rotate. The Pause and Hold buttons sit in the top band.
+# --- touch scheme ----------------------------------------------------
+#
+# Swipe left/right to slide the piece (one cell per ~0.8 cell of travel); the
+# ghost auto-fits the best rotation for that column, exactly like the mouse.
+# A single tap and a double tap map to "drop" / "rotate" (see TAP_DROPS).
+# A held downward drag is an optional soft drop.
+
+func _swipe_px() -> float:
+	return maxf(_field.cell * 0.8, 14.0)
+
+
+func _touch_refresh_suggest() -> void:
+	if _field.piece_left_col() < 0:
+		_field.set_suggestion({})
+		return
+	var centre := _field.piece_left_col() + (_field.piece_width() - 1) * 0.5
+	_field.set_suggestion(_field.suggest_placement(centre))
+
+
 func _handle_touch(e: InputEvent) -> void:
 	if e is InputEventScreenTouch:
 		if e.pressed:
-			_touch_id = e.index
-			_touch_start = e.position
-			_touch_time = 0.0
-			_touch_axis = 0
-			_touch_moved_cells = 0
-			_touch_is_tap = true
-			_touch_soft_drop = false
+			if _touch_id < 0:
+				_touch_id = e.index
+				_touch_start = e.position
+				_touch_time = 0.0
+				_touch_axis = 0
+				_touch_moved_cells = 0
+				_touch_is_tap = true
+				_touch_soft_drop = false
 		elif e.index == _touch_id:
+			_touch_soft_drop = false
 			var moved: float = (e.position - _touch_start).length()
 			if _touch_is_tap and moved < TAP_MAX_MOVE and _touch_time < TAP_MAX_TIME:
-				_field.rotate_piece(1)
+				_register_tap(e.position)
 			_touch_id = -1
-			_touch_soft_drop = false
 	elif e is InputEventScreenDrag and e.index == _touch_id:
 		var d: Vector2 = e.position - _touch_start
 		if d.length() > TAP_MAX_MOVE:
 			_touch_is_tap = false
 		if _touch_axis == 0:
-			if absf(d.x) > 14.0 and absf(d.x) >= absf(d.y):
+			if absf(d.x) > 12.0 and absf(d.x) >= absf(d.y):
 				_touch_axis = 1
-			elif absf(d.y) > 14.0 and absf(d.y) > absf(d.x):
+			elif absf(d.y) > 16.0 and absf(d.y) > absf(d.x):
 				_touch_axis = 2
 		if _touch_axis == 1:
-			var want := int(d.x / SWIPE_CELL)
+			var want := int(d.x / _swipe_px())
+			var changed := false
 			while _touch_moved_cells < want and _field.move(1):
 				_touch_moved_cells += 1
+				changed = true
 			while _touch_moved_cells > want and _field.move(-1):
 				_touch_moved_cells -= 1
+				changed = true
+			if changed:
+				_touch_refresh_suggest()
 			_touch_soft_drop = false
 		elif _touch_axis == 2:
-			if d.y > 24.0 and e.velocity.y > FLICK_SPEED:
-				_field.hard_drop()
-				_touch_id = -1
-				_touch_soft_drop = false
-			else:
-				_touch_soft_drop = d.y > 12.0
+			_touch_soft_drop = d.y > 14.0
 
 
-## Mouse scheme: the cursor column picks where the piece should go; the field
-## finds the best-fitting rotation + landing there (tuck under overhangs) and
-## shows it as the ghost. Wheel forces a rotation; left-click hard-drops into
-## the placement; right-click holds.
+func _register_tap(pos: Vector2) -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	var is_double := (now - _last_tap_time) < DOUBLE_TAP_TIME \
+		and pos.distance_to(_last_tap_pos) < DOUBLE_TAP_DIST
+	if is_double:
+		_last_tap_time = -1.0
+		_pending_drop = false
+		if TAP_DROPS:
+			_field.cycle_rot_lock(1)
+			_touch_refresh_suggest()
+		else:
+			_field.hard_drop()
+	else:
+		_last_tap_time = now
+		_last_tap_pos = pos
+		if TAP_DROPS:
+			_pending_drop = true
+			_pending_drop_t = DOUBLE_TAP_TIME
+		else:
+			_field.cycle_rot_lock(1)
+			_touch_refresh_suggest()
+
+
 func _mouse_update(screen_pos: Vector2) -> void:
 	if _field.piece_left_col() < 0:
 		return
-	var col := (screen_pos.x - WELL_ORIGIN.x) / float(Playfield.CELL) - 0.5
+	var col := (screen_pos.x - _field.position.x) / float(_field.cell) - 0.5
 	_field.set_suggestion(_field.suggest_placement(col))
 
 
@@ -403,7 +436,20 @@ func _process(dt: float) -> void:
 		return
 	if _touch_id >= 0:
 		_touch_time += dt
+	if _pending_drop:
+		_pending_drop_t -= dt
+		if _pending_drop_t <= 0.0:
+			_pending_drop = false
+			if TAP_DROPS:
+				_field.hard_drop()
+			else:
+				_field.cycle_rot_lock(1)
+				_touch_refresh_suggest()
+
 	_field.soft_drop_active = _touch_soft_drop or Input.is_action_pressed("soft_drop")
+
+	if _touch_mode and _touch_id < 0 and not _pending_drop:
+		_touch_refresh_suggest()
 
 	var dir := 0
 	if Input.is_action_pressed("move_right"):
@@ -436,18 +482,15 @@ func _process(dt: float) -> void:
 # --- HUD previews -----------------------------------------------------
 
 func _draw() -> void:
-	var dy := Vector2(0, _stage_dy)
-	var hold_box := Rect2(HOLD_BOX.position + dy, HOLD_BOX.size)
-	var next_box := Rect2(NEXT_BOX.position + dy, NEXT_BOX.size)
-	_draw_preview_frame(hold_box)
-	_draw_preview_frame(next_box)
+	_draw_preview_frame(_hold_box)
+	_draw_preview_frame(_next_box)
 	if _field == null:
 		return
 	if _field.hold_type() >= 0:
-		_draw_piece_in_box(_field.hold_type(), hold_box)
+		_draw_piece_in_box(_field.hold_type(), _hold_box)
 	var q := _field.queue_types()
 	if q.size() > 0:
-		_draw_piece_in_box(q[0], next_box)
+		_draw_piece_in_box(q[0], _next_box)
 
 
 func _draw_preview_frame(box: Rect2) -> void:

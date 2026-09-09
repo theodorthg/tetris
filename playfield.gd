@@ -15,7 +15,7 @@ signal hard_dropped(rows: int) ## distance of a hard drop (score +2 per row)
 
 const COLS := 10
 const ROWS := 20
-const CELL := 27
+var cell := 27
 const LOCK_DELAY := 0.5
 const MAX_LOCK_RESETS := 15
 const SOFT_DROP_FACTOR := 20.0   ## soft drop is this many times normal gravity
@@ -369,11 +369,11 @@ func _placement_score(rot: int, pos: Vector2i, target_col: float) -> float:
 	var pmin_y := ROWS
 	var pmax_y := -ROWS
 	for c in Pieces.CELLS[_type][rot]:
-		var cell: Vector2i = pos + c
-		new_cells[cell] = true
-		sum_x += cell.x
-		pmin_y = mini(pmin_y, cell.y)
-		pmax_y = maxi(pmax_y, cell.y)
+		var pc: Vector2i = pos + c
+		new_cells[pc] = true
+		sum_x += pc.x
+		pmin_y = mini(pmin_y, pc.y)
+		pmax_y = maxi(pmax_y, pc.y)
 	var center := sum_x / 4.0
 	var piece_span_y := pmax_y - pmin_y   # 0 for a flat I, 3 for a vertical I
 
@@ -499,14 +499,14 @@ func _clear_lines() -> int:
 # --- rendering ----------------------------------------------------------
 
 func _draw() -> void:
-	var w := COLS * CELL
-	var h := ROWS * CELL
+	var w := COLS * cell
+	var h := ROWS * cell
 	# well background + frame
 	draw_rect(Rect2(0, 0, w, h), Color(0.04, 0.05, 0.08, 1.0))
 	for x in range(1, COLS):
-		draw_line(Vector2(x * CELL, 0), Vector2(x * CELL, h), Color(1, 1, 1, 0.04), 1.0)
+		draw_line(Vector2(x * cell, 0), Vector2(x * cell, h), Color(1, 1, 1, 0.04), 1.0)
 	for y in range(1, ROWS):
-		draw_line(Vector2(0, y * CELL), Vector2(w, y * CELL), Color(1, 1, 1, 0.04), 1.0)
+		draw_line(Vector2(0, y * cell), Vector2(w, y * cell), Color(1, 1, 1, 0.04), 1.0)
 
 	# locked cells
 	for r in ROWS:
@@ -538,8 +538,8 @@ func _draw() -> void:
 
 
 func _draw_cell(col: int, row: int, color: Color, alpha: float) -> void:
-	var p := Vector2(col * CELL, row * CELL)
-	var inner := Rect2(p + Vector2(1, 1), Vector2(CELL - 2, CELL - 2))
+	var p := Vector2(col * cell, row * cell)
+	var inner := Rect2(p + Vector2(1, 1), Vector2(cell - 2, cell - 2))
 	draw_rect(inner, Color(color, alpha))
 	draw_rect(inner, Color(1, 1, 1, 0.18), false, 1.0)
 	draw_rect(Rect2(inner.position + Vector2(2, 2), Vector2(inner.size.x - 4, 4)),
@@ -549,8 +549,8 @@ func _draw_cell(col: int, row: int, color: Color, alpha: float) -> void:
 ## Ghost outline: a lightened frame plus a very faint fill so it reads clearly
 ## against the well without being mistaken for a locked cell.
 func _draw_ghost_cell(col: int, row: int, color: Color) -> void:
-	var p := Vector2(col * CELL, row * CELL)
-	var inner := Rect2(p + Vector2(1.5, 1.5), Vector2(CELL - 3, CELL - 3))
+	var p := Vector2(col * cell, row * cell)
+	var inner := Rect2(p + Vector2(1.5, 1.5), Vector2(cell - 3, cell - 3))
 	var glow := color.lightened(0.18)
 	glow.a = 0.8
 	draw_rect(inner, Color(color, 0.07))

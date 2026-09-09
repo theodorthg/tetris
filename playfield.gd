@@ -267,6 +267,47 @@ func has_suggestion() -> bool:
 	return not _suggest.is_empty()
 
 
+## Rotate the active piece toward an absolute state (0..3) by the shorter path,
+## one legal SRS step at a time. Best-effort — stops when a step is blocked.
+func rotate_to(target: int) -> void:
+	if not playing or _type < 0:
+		return
+	target = posmod(target, 4)
+	var guard := 0
+	while _rot != target and guard < 3:
+		var diff := posmod(target - _rot, 4)
+		if not rotate_piece(1 if diff <= 2 else -1):
+			return
+		guard += 1
+
+
+## Slide the active piece so its bounding box sits at column `target_x`,
+## best-effort (stops at a wall / the stack).
+func slide_to_box_x(target_x: int) -> void:
+	if not playing or _type < 0:
+		return
+	var guard := 0
+	while _pos.x != target_x and guard < COLS + 4:
+		if not move(signi(target_x - _pos.x)):
+			return
+		guard += 1
+
+
+## Aim assist for mouse / touch: pick the best placement for `target_col`, show
+## it as the ghost, AND bring the falling piece into that orientation and column
+## so it stays consistent with the ghost (the keyboard already works this way).
+func aim(target_col: float) -> void:
+	if not playing or _type < 0:
+		return
+	var s := suggest_placement(target_col)
+	if s.is_empty():
+		set_suggestion({})
+		return
+	rotate_to(s.rot)
+	slide_to_box_x(s.x)
+	set_suggestion(s)
+
+
 ## Mouse wheel: lock the assist to the next / previous rotation for this piece
 ## (S/Z/I only have two distinct shapes but cycling 0..3 still feels right).
 func cycle_rot_lock(dir: int) -> void:

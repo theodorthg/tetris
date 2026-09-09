@@ -356,32 +356,18 @@ func _swipe_px() -> float:
 
 
 func _on_piece_spawned() -> void:
-	if not _touch_mode:
-		return
-	_touch_col = clampi(_field.piece_left_col() + int(_field.piece_width() / 2.0), 0, Playfield.COLS - 1)
-	_touch_refresh_suggest()
+	if _touch_mode:
+		_touch_col = clampi(_field.piece_left_col() + int(_field.piece_width() / 2.0), 0, Playfield.COLS - 1)
+		_touch_refresh_suggest()
+	elif _mouse_active:
+		_mouse_update(_last_mouse_pos)
 
 
 func _touch_refresh_suggest() -> void:
 	if _field.piece_left_col() < 0:
 		_field.set_suggestion({})
 		return
-	_field.set_suggestion(_field.suggest_placement(float(_touch_col)))
-
-
-## Slide the actual piece as close to the abstract aim column as its footprint
-## allows (the ghost / hard-drop still use the full aim column).
-func _touch_follow_col() -> void:
-	var half := int(_field.piece_width() / 2.0)
-	var target_left := _touch_col - half
-	var cur := _field.piece_left_col()
-	var guard := 0
-	while cur != target_left and guard < Playfield.COLS:
-		var step := signi(target_left - cur)
-		if not _field.move(step):
-			break
-		cur += step
-		guard += 1
+	_field.aim(float(_touch_col))
 
 
 func _handle_touch(e: InputEvent) -> void:
@@ -415,7 +401,6 @@ func _handle_touch(e: InputEvent) -> void:
 			var new_col := clampi(_touch_start_col + want, 0, Playfield.COLS - 1)
 			if new_col != _touch_col:
 				_touch_col = new_col
-				_touch_follow_col()
 				_touch_refresh_suggest()
 			_touch_soft_drop = false
 		elif _touch_axis == 2:
@@ -449,7 +434,7 @@ func _mouse_update(screen_pos: Vector2) -> void:
 	if _field.piece_left_col() < 0:
 		return
 	var col := (screen_pos.x - _field.position.x) / float(_field.cell) - 0.5
-	_field.set_suggestion(_field.suggest_placement(col))
+	_field.aim(col)
 
 
 func _process(dt: float) -> void:

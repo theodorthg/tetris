@@ -12,7 +12,6 @@ signal restart_pressed
 signal quit_pressed
 signal settings_changed(cfg: Dictionary)
 
-const DESIGN := Vector2(480, 800)
 const SETTINGS_PATH := "user://settings.cfg"
 const HOF_PATH := "user://hall_of_fame.cfg"
 const HOF_MAX := 10
@@ -234,7 +233,7 @@ func _commit_name(name: String) -> void:
 func _help_screen() -> void:
 	_title("How to Play", 30)
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(372, 300)
+	scroll.custom_minimum_size = Vector2(372, 240)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_box.add_child(scroll)
 	var body := Label.new()

@@ -7,21 +7,23 @@ extends Node2D
 
 enum State { START, PLAYING, PAUSED, OVER }
 
-const DESIGN := Vector2(480, 800)
-const WELL_ORIGIN := Vector2(80, 150)
-const HOLD_BOX := Rect2(10, 80, 66, 62)
-const NEXT_BOX := Rect2(404, 80, 66, 62)
-const PREVIEW_CELL := 14
-const PAUSE_BTN := Rect2(10, 10, 88, 42)
-const HOLD_BTN := Rect2(382, 10, 88, 42)
+const DESIGN := Vector2(480, 640)
+const WELL_ORIGIN := Vector2(105, 100)
+const HOLD_BOX := Rect2(8, 50, 60, 44)
+const NEXT_BOX := Rect2(412, 50, 60, 44)
+const PREVIEW_CELL := 11
+const PAUSE_BTN := Rect2(8, 8, 78, 36)
+const HOLD_BTN := Rect2(394, 8, 78, 36)
+## Essential design height (HUD band + well). KEEP_WIDTH must not clip below this.
+const SAFE_H := 640.0
 
 const DAS := 0.16
 const ARR := 0.03
 const LINE_SCORE := [0, 100, 300, 500, 800]
 
-# touch tuning
-const SWIPE_CELL := 26.0     ## horizontal drag px per one-cell move
-const TAP_MAX_MOVE := 18.0   ## a touch that moved less than this is a tap (rotate)
+# touch tuning (design px; the swipe distance tracks the cell size)
+const SWIPE_CELL := 22.0     ## horizontal drag px per one-cell move
+const TAP_MAX_MOVE := 16.0   ## a touch that moved less than this is a tap (rotate)
 const TAP_MAX_TIME := 0.22
 const FLICK_SPEED := 1100.0  ## downward px/s that counts as a hard-drop flick
 
@@ -46,6 +48,9 @@ var _last_mouse_pos := Vector2.ZERO
 
 var _pause_btn: Button
 var _hold_btn: Button
+## On a tall touch screen KEEP_WIDTH leaves room below the well; shift the whole
+## play area (well + HUD) down by this many design px so it sits more centred.
+var _stage_dy := 0.0
 
 var _touch_mode := false
 var _touch_id := -1
@@ -58,12 +63,43 @@ var _touch_soft_drop := false
 
 
 func _ready() -> void:
-	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
 	_build()
 	_state = State.START
 	_ui.show_start()
 	if _detect_touch():
 		_enter_touch_mode()
+	_apply_aspect()
+	get_viewport().size_changed.connect(_apply_aspect)
+
+
+## Desktop: letterbox (KEEP). Touch: fill the width (KEEP_WIDTH) so the board is
+## as large as possible — but only when the visible design height still covers
+## the HUD+well; on a near-square (wide) tablet that would clip the bottom rows,
+## so fall back to KEEP there.
+func _apply_aspect() -> void:
+	var win := Vector2(get_window().size)
+	var mode := Window.CONTENT_SCALE_ASPECT_KEEP
+	_stage_dy = 0.0
+	if _touch_mode and win.x > 0:
+		var visible_h := DESIGN.x * win.y / win.x
+		if visible_h >= SAFE_H - 1.0:
+			mode = Window.CONTENT_SCALE_ASPECT_KEEP_WIDTH
+			_stage_dy = clampf((visible_h - SAFE_H) * 0.4, 0.0, 240.0)
+	get_window().content_scale_aspect = mode
+	_relayout()
+
+
+func _relayout() -> void:
+	if _field == null:
+		return
+	var dy := _stage_dy
+	_field.position = WELL_ORIGIN + Vector2(0, dy)
+	_score_label.position = Vector2(100, 6 + dy)
+	_level_label.position = Vector2(96, 40 + dy)
+	_lines_label.position = Vector2(244, 40 + dy)
+	_pause_btn.position = PAUSE_BTN.position + Vector2(0, dy)
+	_hold_btn.position = HOLD_BTN.position + Vector2(0, dy)
+	queue_redraw()
 
 
 func _build() -> void:
@@ -77,17 +113,17 @@ func _build() -> void:
 	_field.next_changed.connect(func(_q): queue_redraw())
 	_field.hold_changed.connect(func(_t): queue_redraw())
 
-	_score_label = _mk_label(24)
-	_score_label.position = Vector2(110, 12)
-	_score_label.size = Vector2(260, 34)
+	_score_label = _mk_label(22)
+	_score_label.position = Vector2(100, 6)
+	_score_label.size = Vector2(280, 30)
 	add_child(_score_label)
-	_level_label = _mk_label(14)
-	_level_label.position = Vector2(108, 50)
-	_level_label.size = Vector2(130, 20)
+	_level_label = _mk_label(13)
+	_level_label.position = Vector2(96, 40)
+	_level_label.size = Vector2(140, 18)
 	add_child(_level_label)
-	_lines_label = _mk_label(14)
-	_lines_label.position = Vector2(242, 50)
-	_lines_label.size = Vector2(130, 20)
+	_lines_label = _mk_label(13)
+	_lines_label.position = Vector2(244, 40)
+	_lines_label.size = Vector2(140, 18)
 	add_child(_lines_label)
 
 	_pause_btn = _hud_button("PAUSE", PAUSE_BTN, func(): _pause())
@@ -154,6 +190,7 @@ func _enter_touch_mode() -> void:
 	_mouse_active = false
 	if _field:
 		_field.clear_suggestion()
+	_apply_aspect()
 
 
 # --- state --------------------------------------------------------------
@@ -395,15 +432,18 @@ func _process(dt: float) -> void:
 # --- HUD previews -----------------------------------------------------
 
 func _draw() -> void:
-	_draw_preview_frame(HOLD_BOX)
-	_draw_preview_frame(NEXT_BOX)
+	var dy := Vector2(0, _stage_dy)
+	var hold_box := Rect2(HOLD_BOX.position + dy, HOLD_BOX.size)
+	var next_box := Rect2(NEXT_BOX.position + dy, NEXT_BOX.size)
+	_draw_preview_frame(hold_box)
+	_draw_preview_frame(next_box)
 	if _field == null:
 		return
 	if _field.hold_type() >= 0:
-		_draw_piece_in_box(_field.hold_type(), HOLD_BOX)
+		_draw_piece_in_box(_field.hold_type(), hold_box)
 	var q := _field.queue_types()
 	if q.size() > 0:
-		_draw_piece_in_box(q[0], NEXT_BOX)
+		_draw_piece_in_box(q[0], next_box)
 
 
 func _draw_preview_frame(box: Rect2) -> void:

@@ -15,7 +15,7 @@ signal hard_dropped(rows: int) ## distance of a hard drop (score +2 per row)
 
 const COLS := 10
 const ROWS := 20
-const CELL := 32
+const CELL := 27
 const LOCK_DELAY := 0.5
 const MAX_LOCK_RESETS := 15
 const SOFT_DROP_FACTOR := 20.0   ## soft drop is this many times normal gravity

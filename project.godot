@@ -22,7 +22,7 @@ boot_splash/use_filter=true
 [display]
 
 window/size/viewport_width=480
-window/size/viewport_height=800
+window/size/viewport_height=640
 window/stretch/mode="canvas_items"
 window/handheld/orientation=1
 

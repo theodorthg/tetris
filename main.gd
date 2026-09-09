@@ -100,7 +100,7 @@ func _show_start() -> void:
 	_state = State.START
 	_overlay.visible = true
 	_msg_title.text = "TETRIS"
-	_msg_sub.text = "Press any key, click or tap to start\n\nMove:  Arrows / A D / mouse\nRotate:  Up / X / Z / left-click\nSoft drop:  Down / S\nHard drop:  Space / right-click\nHold:  C     Pause:  Esc / P"
+	_msg_sub.text = "Press any key, click or tap to start\n\nMove:  Arrows / A D  ·  or mouse left/right\nRotate:  Up / X / Z  ·  or mouse up/down\nSoft drop:  Down / S\nHard drop:  Space  ·  or left-click\nHold:  C / End  ·  or right-click\nPause:  Esc / P"
 	queue_redraw()
 
 
@@ -201,20 +201,32 @@ func _unhandled_input(e: InputEvent) -> void:
 		_field.hold()
 	elif e is InputEventMouseButton and e.pressed:
 		if e.button_index == MOUSE_BUTTON_LEFT:
-			_field.rotate_piece(1)
-		elif e.button_index == MOUSE_BUTTON_RIGHT:
 			_field.hard_drop()
+		elif e.button_index == MOUSE_BUTTON_RIGHT:
+			_field.hold()
 	elif e is InputEventMouseMotion and _mouse_control:
-		_mouse_follow(e.position)
+		_mouse_update(e.position)
 
 
-func _mouse_follow(screen_pos: Vector2) -> void:
-	# map the mouse to a target column and step the piece toward it
-	var local_x := screen_pos.x - WELL_ORIGIN.x
-	var target_col := int(floor(local_x / float(Playfield.CELL))) - 1
-	var cur := _field.piece_left_col()
-	if cur < 0:
+## Mouse scheme (play.tetris.com-ish, tuned to the user's request):
+##   horizontal position -> target column
+##   vertical position   -> target orientation (well split into 4 bands)
+##   left-click          -> hard drop     right-click -> hold
+func _mouse_update(screen_pos: Vector2) -> void:
+	if _field.piece_left_col() < 0:
 		return
+
+	# orientation from the vertical band the cursor is in
+	var well_h := float(Playfield.ROWS * Playfield.CELL)
+	var frac := (screen_pos.y - WELL_ORIGIN.y) / well_h
+	var target_rot := clampi(int(floor(frac * 4.0)), 0, 3)
+	_field.rotate_to(target_rot)
+
+	# column from the horizontal position (piece centred under the cursor)
+	var local_x := screen_pos.x - WELL_ORIGIN.x
+	var span: int = _field.piece_width()
+	var target_col := int(round(local_x / float(Playfield.CELL) - span * 0.5))
+	var cur := _field.piece_left_col()
 	var guard := 0
 	while cur != target_col and guard < Playfield.COLS:
 		var dir: int = signi(target_col - cur)

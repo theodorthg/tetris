@@ -174,6 +174,23 @@ func rotate_piece(dir: int) -> bool:
 	return false
 
 
+## Rotate toward an absolute state (0..3) by the shorter path, one legal step
+## at a time. Used by the mouse control (vertical zone -> orientation).
+func rotate_to(target: int) -> void:
+	if not playing or _type < 0:
+		return
+	target = clampi(target, 0, 3)
+	var guard := 0
+	while _rot != target and guard < 3:
+		var diff := target - _rot
+		if diff < 0:
+			diff += 4
+		var dir := 1 if diff <= 2 else -1
+		if not rotate_piece(dir):
+			return
+		guard += 1
+
+
 func hard_drop() -> void:
 	if not playing or _type < 0:
 		return
@@ -207,6 +224,18 @@ func piece_left_col() -> int:
 	for c in Pieces.CELLS[_type][_rot]:
 		minx = mini(minx, _pos.x + c.x)
 	return minx
+
+
+## Width in cells of the active piece at its current rotation (1 if none).
+func piece_width() -> int:
+	if _type < 0:
+		return 1
+	var minx := COLS
+	var maxx := -COLS
+	for c in Pieces.CELLS[_type][_rot]:
+		minx = mini(minx, c.x)
+		maxx = maxi(maxx, c.x)
+	return maxx - minx + 1
 
 
 func _touch_lock_reset() -> void:
@@ -309,7 +338,7 @@ func _draw() -> void:
 			for cc in Pieces.CELLS[_type][_rot]:
 				var gc: Vector2i = g + cc
 				if gc.y >= 0:
-					_draw_cell(gc.x, gc.y, Pieces.COLORS[_type], 0.18)
+					_draw_ghost_cell(gc.x, gc.y, Pieces.COLORS[_type])
 		# active piece
 		for cc in Pieces.CELLS[_type][_rot]:
 			var pc: Vector2i = _pos + cc
@@ -322,13 +351,21 @@ func _draw() -> void:
 func _draw_cell(col: int, row: int, color: Color, alpha: float) -> void:
 	var p := Vector2(col * CELL, row * CELL)
 	var inner := Rect2(p + Vector2(1, 1), Vector2(CELL - 2, CELL - 2))
-	if alpha < 0.5:
-		draw_rect(inner, Color(color, alpha), false, 2.0)
-	else:
-		draw_rect(inner, Color(color, alpha))
-		draw_rect(inner, Color(1, 1, 1, 0.18), false, 1.0)
-		draw_rect(Rect2(inner.position + Vector2(2, 2), Vector2(inner.size.x - 4, 4)),
-			Color(1, 1, 1, 0.22))
+	draw_rect(inner, Color(color, alpha))
+	draw_rect(inner, Color(1, 1, 1, 0.18), false, 1.0)
+	draw_rect(Rect2(inner.position + Vector2(2, 2), Vector2(inner.size.x - 4, 4)),
+		Color(1, 1, 1, 0.22))
+
+
+## Ghost outline: a bright, lightened frame plus a very faint fill so it reads
+## clearly against the well without being mistaken for a locked cell.
+func _draw_ghost_cell(col: int, row: int, color: Color) -> void:
+	var p := Vector2(col * CELL, row * CELL)
+	var inner := Rect2(p + Vector2(1.5, 1.5), Vector2(CELL - 3, CELL - 3))
+	var glow := color.lightened(0.35)
+	glow.a = 1.0
+	draw_rect(inner, Color(color, 0.10))
+	draw_rect(inner, glow, false, 2.5)
 
 
 # helpers for previews (used by the HUD) -------------------------------

@@ -12,8 +12,8 @@ const WELL_ORIGIN := Vector2(105, 100)
 const HOLD_BOX := Rect2(8, 50, 60, 44)
 const NEXT_BOX := Rect2(412, 50, 60, 44)
 const PREVIEW_CELL := 11
-const PAUSE_BTN := Rect2(8, 8, 78, 36)
-const HOLD_BTN := Rect2(394, 8, 78, 36)
+const HOLD_BTN := Rect2(8, 8, 78, 36)
+const PAUSE_BTN := Rect2(422, 4, 46, 46)
 ## Essential design height (HUD band + well). KEEP_WIDTH must not clip below this.
 const SAFE_H := 640.0
 
@@ -46,7 +46,7 @@ var _mouse_control := true
 var _mouse_active := false
 var _last_mouse_pos := Vector2.ZERO
 
-var _pause_btn: Button
+var _pause_btn: PauseButton
 var _hold_btn: Button
 ## On a tall touch screen KEEP_WIDTH leaves room below the well; shift the whole
 ## play area (well + HUD) down by this many design px so it sits more centred.
@@ -65,7 +65,7 @@ var _touch_soft_drop := false
 func _ready() -> void:
 	_build()
 	_state = State.START
-	_ui.show_start()
+	_ui.show_splash()
 	if _detect_touch():
 		_enter_touch_mode()
 	_apply_aspect()
@@ -126,7 +126,11 @@ func _build() -> void:
 	_lines_label.size = Vector2(140, 18)
 	add_child(_lines_label)
 
-	_pause_btn = _hud_button("PAUSE", PAUSE_BTN, func(): _pause())
+	_pause_btn = PauseButton.new()
+	_pause_btn.position = PAUSE_BTN.position
+	_pause_btn.size = PAUSE_BTN.size
+	_pause_btn.tapped.connect(func(): _pause())
+	add_child(_pause_btn)
 	_hold_btn = _hud_button("HOLD", HOLD_BTN, func(): _field.hold())
 	_pause_btn.visible = false
 	_hold_btn.visible = false
@@ -314,7 +318,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		_field.hard_drop()
 	elif e.is_action_pressed("hold_piece"):
 		_field.hold()
-	elif e is InputEventMouseButton and e.pressed:
+	elif e is InputEventMouseButton and e.pressed and not _touch_mode:
 		match e.button_index:
 			MOUSE_BUTTON_LEFT:
 				_field.hard_drop()
@@ -328,7 +332,7 @@ func _unhandled_input(e: InputEvent) -> void:
 				_mouse_active = true
 				_field.cycle_rot_lock(-1)
 				_mouse_update(_last_mouse_pos)
-	elif e is InputEventMouseMotion and _mouse_control:
+	elif e is InputEventMouseMotion and _mouse_control and not _touch_mode:
 		_mouse_active = true
 		_last_mouse_pos = e.position
 		_mouse_update(e.position)

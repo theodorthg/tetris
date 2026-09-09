@@ -16,7 +16,9 @@ const SETTINGS_PATH := "user://settings.cfg"
 const HOF_PATH := "user://hall_of_fame.cfg"
 const HOF_MAX := 10
 
-enum Screen { NONE, START, PAUSE, SETTINGS, SOUND, HELP, GAMEOVER }
+enum Screen { NONE, SPLASH, START, PAUSE, SETTINGS, SOUND, HELP, GAMEOVER }
+
+const SPLASH_TIME := 2.6
 
 var settings := {
 	"start_level": 1,
@@ -32,6 +34,8 @@ var _bg: TextureRect
 var _scrim: ColorRect
 var _root: MarginContainer
 var _box: VBoxContainer
+var _splash_bar: ProgressBar
+var _splash_tween: Tween
 
 
 func _ready() -> void:
@@ -90,9 +94,61 @@ func hide_all() -> void:
 	visible = false
 
 
+func show_splash() -> void:
+	_screen = Screen.SPLASH
+	visible = true
+	_clear_box()
+	_bg.visible = true
+	_bg.modulate = Color(1, 1, 1)
+	_scrim.color = Color(0.03, 0.04, 0.06, 0.0)
+
+	var wrap := VBoxContainer.new()
+	wrap.alignment = BoxContainer.ALIGNMENT_END
+	wrap.add_theme_constant_override("separation", 10)
+	_box.add_child(wrap)
+	_gap(300)
+	var loading := Label.new()
+	loading.text = "Loading…"
+	loading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	loading.add_theme_font_size_override("font_size", 15)
+	loading.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
+	_box.add_child(loading)
+	_splash_bar = ProgressBar.new()
+	_splash_bar.custom_minimum_size = Vector2(300, 8)
+	_splash_bar.min_value = 0
+	_splash_bar.max_value = 100
+	_splash_bar.value = 0
+	_splash_bar.show_percentage = false
+	_box.add_child(_splash_bar)
+
+	_splash_tween = create_tween()
+	_splash_tween.tween_property(_splash_bar, "value", 100.0, SPLASH_TIME) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_splash_tween.tween_callback(show_start)
+
+
+func _finish_splash() -> void:
+	if _screen != Screen.SPLASH:
+		return
+	if _splash_tween and _splash_tween.is_valid():
+		_splash_tween.kill()
+	show_start()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _screen == Screen.SPLASH:
+		var go: bool = (event is InputEventKey and event.pressed and not event.echo) \
+			or (event is InputEventScreenTouch and event.pressed) \
+			or (event is InputEventMouseButton and event.pressed)
+		if go:
+			_finish_splash()
+			get_viewport().set_input_as_handled()
+
+
 func show_start() -> void:
 	_screen = Screen.START
 	_return_to = Screen.START
+	_scrim.color = Color(0.035, 0.045, 0.065, 0.74)
 	_build()
 
 
@@ -157,6 +213,8 @@ func _build() -> void:
 	_clear_box()
 	var splash_screens := [Screen.START, Screen.GAMEOVER]
 	_bg.visible = _screen in splash_screens
+	_bg.modulate = Color(0.6, 0.6, 0.66)
+	_scrim.color = Color(0.035, 0.045, 0.065, 0.74)
 
 	match _screen:
 		Screen.START:
@@ -200,6 +258,8 @@ func _build_name_entry() -> void:
 	visible = true
 	_clear_box()
 	_bg.visible = true
+	_bg.modulate = Color(0.6, 0.6, 0.66)
+	_scrim.color = Color(0.035, 0.045, 0.065, 0.74)
 	_title("NEW HIGH SCORE!", 30)
 	_label("Score  %d" % int(_pending.get("score", 0)), 18)
 	_gap(8)

@@ -36,6 +36,10 @@ Aufrufen:
   `gh workflow run windows-export.yml`). `config/version` in `project.godot`
   vorher passend setzen.
 
+Browser-Test primär im Claude-In-App-Panel. Fällt das aus, ist
+`chrome-devtools`-MCP (`-s local` für dieses Projekt registriert, `mcp__chrome-devtools__*`)
+der Fallback — echtes Chrome, isoliertes Profil, läuft über Node 22 unter `~/opt/node22/`.
+
 ## Design-Entscheidungen
 
 - **Design-Canvas** 480×640 (`project.godot`). Layout ist voll responsiv:

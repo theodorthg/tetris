@@ -71,6 +71,10 @@ var _pending_drop_t := 0.0
 var _last_aim_col := -99      ## last integer column the mouse aimed at (for the click sound)
 var _move_snd_t := 0.0        ## throttle for the per-move click during key-repeat
 
+const FLASH_TIME := 1.1
+var _flash_text := ""
+var _flash_t := 0.0
+
 @onready var _snd: Node = get_node_or_null(^"/root/Snd")
 
 
@@ -282,6 +286,7 @@ func _start_game() -> void:
 	_score = 0
 	_lines = 0
 	_level = _start_level
+	_flash_t = 0.0
 	_state = State.PLAYING
 	_mouse_active = false
 	_touch_id = -1
@@ -346,14 +351,23 @@ func _on_settings_changed(cfg: Dictionary) -> void:
 
 # --- scoring -----------------------------------------------------------
 
-func _on_lines_cleared(rows: int) -> void:
-	_sfx("line1" if rows <= 1 else "lines")
-	_add_score(LINE_SCORE[clampi(rows, 0, 4)] * _level)
+const TSPIN_SCORE := [400, 800, 1200, 1600]   ## T-spin: 0, 1, 2, 3 lines
+
+func _on_lines_cleared(rows: int, tspin: bool) -> void:
+	if tspin:
+		_add_score(TSPIN_SCORE[clampi(rows, 0, 3)] * _level)
+		_flash(("T-SPIN", "T-SPIN SINGLE", "T-SPIN DOUBLE", "T-SPIN TRIPLE")[clampi(rows, 0, 3)])
+		_sfx("lines")
+	else:
+		_add_score(LINE_SCORE[clampi(rows, 0, 4)] * _level)
+		if rows > 0:
+			_sfx("line1" if rows == 1 else "lines")
 	_lines += rows
 	var new_level: int = _start_level + int(_lines / 10.0)
 	if new_level != _level:
 		_level = new_level
 		_field.fall_interval = _fall_interval_for(_level)
+		_flash("LEVEL %d" % _level)
 	_update_hud()
 
 
@@ -535,7 +549,16 @@ func _mouse_update(screen_pos: Vector2) -> void:
 	_field.aim(col)
 
 
+func _flash(text: String) -> void:
+	_flash_text = text
+	_flash_t = FLASH_TIME
+	queue_redraw()
+
+
 func _process(dt: float) -> void:
+	if _flash_t > 0.0:
+		_flash_t -= dt
+		queue_redraw()
 	if _state != State.PLAYING:
 		return
 	if _touch_id >= 0:
@@ -596,6 +619,18 @@ func _draw() -> void:
 	var q := _field.queue_types()
 	if q.size() > 0:
 		_draw_piece_in_box(q[0], _next_box)
+
+	if _flash_t > 0.0 and _flash_text != "":
+		var p := _flash_t / FLASH_TIME               # 1 → 0
+		var a := clampf(p * 1.7, 0.0, 1.0)
+		var font := ThemeDB.fallback_font
+		var fs := int(clampf(_field.cell * 1.1, 26.0, 44.0))
+		var tw := font.get_string_size(_flash_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var cx := _field.position.x + _field.cell * Playfield.COLS * 0.5 - tw * 0.5
+		var cy := _field.position.y + _field.cell * Playfield.ROWS * 0.32 - (1.0 - p) * 34.0
+		var pos := Vector2(cx, cy)
+		draw_string_outline(font, pos, _flash_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 6, Color(0, 0, 0, a * 0.8))
+		draw_string(font, pos, _flash_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1.0, 0.85, 0.30, a))
 
 
 func _draw_preview_frame(box: Rect2) -> void:

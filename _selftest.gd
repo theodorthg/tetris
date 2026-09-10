@@ -15,7 +15,7 @@ func _init() -> void:
 			pf._grid[r][c] = Pieces.O
 	pf._grid[Playfield.ROWS - 1][0] = Pieces.O
 	pf._grid[Playfield.ROWS - 2][0] = Pieces.O
-	var cleared := pf._clear_lines()
+	var cleared := pf.clear_full_rows()
 	fails += _expect(cleared == 2, "clear 2 full rows, got %d" % cleared)
 	fails += _expect(pf._grid[Playfield.ROWS - 1].count(-1) == Playfield.COLS,
 		"bottom row empty after clear")

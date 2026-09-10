@@ -5,7 +5,7 @@ extends Node2D
 ## all fall / lock timing. Emits gameplay events; scoring, level and fall speed
 ## live in main.gd. Drawn in local space with (0,0) at the top-left of the well.
 
-signal lines_cleared(rows: int)
+signal lines_cleared(rows: int, tspin: bool)
 signal piece_locked
 signal hold_changed(type: int)
 signal next_changed(queue: Array)
@@ -21,6 +21,7 @@ const LOCK_DELAY := 0.5
 const MAX_LOCK_RESETS := 15
 const SOFT_DROP_FACTOR := 20.0   ## soft drop is this many times normal gravity
 const _DOWN := Vector2i(0, 1)
+const CLEAR_TIME := 0.26         ## line-clear flash before the rows drop away
 
 var fall_interval: float = 1.0   ## seconds per row; set by main per level
 var soft_drop_active := false
@@ -40,6 +41,10 @@ var _lock_accum := 0.0
 var _lock_resets := 0
 var _on_floor := false
 var _rng := RandomNumberGenerator.new()
+
+var _clearing: Array = []        ## row indices flashing; gameplay is frozen
+var _clear_t := 0.0
+var _last_rot := false            ## was the last successful piece move a rotation? (T-spin)
 
 ## Mouse-assist: the suggested landing {rot,x,y} that the ghost shows and that
 ## a hard drop snaps to. Empty when the player is on keyboard/touch.
@@ -62,6 +67,8 @@ func _reset_grid() -> void:
 		row.resize(COLS)
 		row.fill(-1)
 		_grid.append(row)
+	_clearing = []
+	_clear_t = 0.0
 
 
 func start() -> void:
@@ -83,6 +90,8 @@ func start() -> void:
 
 func stop() -> void:
 	playing = false
+	_clearing = []
+	_clear_t = 0.0
 	set_process(false)
 	queue_redraw()
 
@@ -107,6 +116,7 @@ func _spawn_current() -> void:
 	_rot = 0
 	_pos = Vector2i(Pieces.SPAWN_X[_type], 0)
 	_fall_accum = 0.0
+	_last_rot = false
 	_reset_lock()
 	_suggest = {}
 	_rot_lock = -1
@@ -161,6 +171,7 @@ func move(dx: int) -> bool:
 	var np := _pos + Vector2i(dx, 0)
 	if _valid(_type, _rot, np):
 		_pos = np
+		_last_rot = false
 		_touch_lock_reset()
 		queue_redraw()
 		return true
@@ -190,6 +201,7 @@ func rotate_piece(dir: int) -> bool:
 		return false
 	_rot = st[0]
 	_pos = st[1]
+	_last_rot = true
 	_touch_lock_reset()
 	queue_redraw()
 	return true
@@ -208,6 +220,7 @@ func hard_drop() -> void:
 	var dist: int = maxi(_pos.y - from_y, 0)
 	if dist > 0:
 		hard_dropped.emit(dist)
+		_last_rot = false      # a drop that moved the piece isn't a spin
 	_lock_piece()
 
 
@@ -486,6 +499,12 @@ func _touch_lock_reset() -> void:
 # --- timing --------------------------------------------------------------
 
 func _process(dt: float) -> void:
+	if not _clearing.is_empty():
+		_clear_t += dt
+		queue_redraw()
+		if _clear_t >= CLEAR_TIME:
+			_collapse_cleared()
+		return
 	if not playing or _type < 0:
 		return
 	var interval := fall_interval
@@ -500,6 +519,7 @@ func _process(dt: float) -> void:
 		while _fall_accum >= interval and _valid(_type, _rot, _pos + Vector2i(0, 1)):
 			_fall_accum -= interval
 			_pos += Vector2i(0, 1)
+			_last_rot = false
 			if soft_drop_active:
 				soft_drop_cell.emit()
 			queue_redraw()
@@ -512,6 +532,10 @@ func _process(dt: float) -> void:
 
 
 func _lock_piece() -> void:
+	# T-spin: a T locked straight after a rotation with 3+ of its diagonal
+	# corners blocked (walls / floor count).
+	var tspin := _type == Pieces.T and _last_rot and _tspin_corners() >= 3
+
 	var topped := true
 	for c in _cells(_type, _rot, _pos):
 		if c.y >= 0:
@@ -526,29 +550,70 @@ func _lock_piece() -> void:
 		topped_out.emit()
 		queue_redraw()
 		return
-	var cleared := _clear_lines()
-	if cleared > 0:
-		lines_cleared.emit(cleared)
+
+	var full: Array = []
+	for r in ROWS:
+		if not _grid[r].has(-1):
+			full.append(r)
 	_type = -1
+	if full.is_empty():
+		if tspin:
+			lines_cleared.emit(0, true)   # T-spin with no lines still scores
+		queue_redraw()
+		_spawn_from_queue()
+		return
+	# freeze, flash the rows, then _process drops them and spawns the next piece
+	_clearing = full
+	_clear_t = 0.0
+	lines_cleared.emit(full.size(), tspin)
+	queue_redraw()
+
+
+## Count the T piece's diagonal corners that are blocked (occupied cell, or
+## outside the well on the sides / bottom).
+func _tspin_corners() -> int:
+	var ctr := _pos + Vector2i(1, 1)   # the T's centre sits at box (1,1)
+	var n := 0
+	for d: Vector2i in [Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]:
+		var p: Vector2i = ctr + d
+		if p.x < 0 or p.x >= COLS or p.y >= ROWS:
+			n += 1
+		elif p.y >= 0 and _grid[p.y][p.x] != -1:
+			n += 1
+	return n
+
+
+func _collapse_cleared() -> void:
+	_drop_rows(_clearing)
+	_clearing = []
+	_clear_t = 0.0
 	queue_redraw()
 	_spawn_from_queue()
 
 
-func _clear_lines() -> int:
+func _drop_rows(rows: Array) -> void:
 	var kept: Array = []
-	var cleared := 0
 	for r in ROWS:
-		if _grid[r].has(-1):
+		if not rows.has(r):
 			kept.append(_grid[r])
-		else:
-			cleared += 1
 	while kept.size() < ROWS:
 		var row: Array = []
 		row.resize(COLS)
 		row.fill(-1)
 		kept.push_front(row)
 	_grid = kept
-	return cleared
+
+
+## Detect full rows, remove them, drop the stack; return the count. Gameplay
+## goes through the animated path (_lock_piece → freeze → _process → collapse);
+## this is the synchronous version used by the self-test.
+func clear_full_rows() -> int:
+	var full: Array = []
+	for r in ROWS:
+		if not _grid[r].has(-1):
+			full.append(r)
+	_drop_rows(full)
+	return full.size()
 
 
 # --- rendering ----------------------------------------------------------
@@ -569,6 +634,16 @@ func _draw() -> void:
 			var t: int = _grid[r][c]
 			if t != -1:
 				_draw_cell(c, r, Pieces.COLORS[t], 1.0)
+
+	# line-clear flash: bright wash that fades while the row squashes to its centre
+	if not _clearing.is_empty():
+		var p: float = clampf(_clear_t / CLEAR_TIME, 0.0, 1.0)
+		var wash: float = (1.0 - p) * 0.85 + 0.06
+		var squash: float = ease(p, 2.2) * cell * 0.5
+		for r in _clearing:
+			var yy: float = r * cell
+			draw_rect(Rect2(0.0, yy, float(w), float(cell)), Color(0.09, 0.10, 0.14, p))
+			draw_rect(Rect2(0.0, yy + squash, float(w), cell - squash * 2.0), Color(1, 1, 1, wash))
 
 	if _type >= 0 and playing:
 		# ghost — mouse-suggested placement if any, else straight down

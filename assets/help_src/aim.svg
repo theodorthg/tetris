@@ -15,7 +15,7 @@
   <!-- header -->
   <text x="640" y="104" text-anchor="middle" font-size="60" font-weight="700" fill="#eef2fa" letter-spacing="3">AIM  =  AUTO-ROTATE</text>
   <rect x="470" y="124" width="340" height="4" rx="2" fill="#f0c02a"/>
-  <text x="640" y="166" text-anchor="middle" font-size="32" fill="#9fb0cc">Point at a column — the piece spins and drops to fit</text>
+  <text x="640" y="166" text-anchor="middle" font-size="37" fill="#9fb0cc">Point at a column — the piece spins and drops to fit</text>
 
   <!-- ===== well (6 x 10, cell 58, origin 466,196) ===== -->
   <g>
@@ -82,10 +82,10 @@
   </g>
   <path d="M900 684 L 826 684" stroke="#5c6b86" stroke-width="2"/>
   <text x="912" y="678" font-size="31" font-weight="700" fill="#eef2fa">mouse-pointer</text>
-  <text x="912" y="708" font-size="27" fill="#9fb0cc">you move it</text>
+  <text x="912" y="708" font-size="32" fill="#9fb0cc">you move it</text>
 
   <!-- captions -->
   <text x="640" y="836" text-anchor="middle" font-size="37" font-weight="700" fill="#eef2fa">You choose the column.</text>
   <text x="640" y="878" text-anchor="middle" font-size="37" font-weight="700" fill="#f0c02a">The game rotates &amp; places it.</text>
-  <text x="640" y="916" text-anchor="middle" font-size="28" fill="#9fb0cc">the dashed ghost always shows where it will land</text>
+  <text x="640" y="916" text-anchor="middle" font-size="33" fill="#9fb0cc">the dashed ghost always shows where it will land</text>
 </svg>

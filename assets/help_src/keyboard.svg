@@ -19,17 +19,17 @@
     <g transform="translate(150 190)">
       <rect x="0" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="35" y="47" text-anchor="middle" font-size="34" fill="#e8eefc">&#8592;</text>
       <rect x="80" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="115" y="47" text-anchor="middle" font-size="34" fill="#e8eefc">&#8594;</text>
-      <text x="176" y="45" font-size="27" fill="#9fb0cc">or</text>
+      <text x="176" y="45" font-size="32" fill="#9fb0cc">or</text>
       <rect x="222" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="257" y="47" text-anchor="middle" font-size="30" fill="#e8eefc">A</text>
       <rect x="302" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="337" y="47" text-anchor="middle" font-size="30" fill="#e8eefc">D</text>
       <text x="470" y="32" font-size="36" font-weight="700" fill="#eef2fa">Move left / right</text>
-      <text x="470" y="62" font-size="28" fill="#9fb0cc">hold to auto-repeat</text>
+      <text x="470" y="62" font-size="33" fill="#9fb0cc">hold to auto-repeat</text>
     </g>
 
     <!-- ROTATE CW -->
     <g transform="translate(150 300)">
       <rect x="0" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="35" y="47" text-anchor="middle" font-size="34" fill="#e8eefc">&#8593;</text>
-      <text x="80" y="45" font-size="27" fill="#9fb0cc">or</text>
+      <text x="80" y="45" font-size="32" fill="#9fb0cc">or</text>
       <rect x="124" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="159" y="47" text-anchor="middle" font-size="30" fill="#e8eefc">X</text>
       <text x="470" y="47" font-size="36" font-weight="700" fill="#eef2fa">Rotate clockwise</text>
     </g>
@@ -43,23 +43,23 @@
     <!-- SOFT DROP -->
     <g transform="translate(150 500)">
       <rect x="0" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="35" y="47" text-anchor="middle" font-size="34" fill="#e8eefc">&#8595;</text>
-      <text x="80" y="45" font-size="27" fill="#9fb0cc">or</text>
+      <text x="80" y="45" font-size="32" fill="#9fb0cc">or</text>
       <rect x="124" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="159" y="47" text-anchor="middle" font-size="30" fill="#e8eefc">S</text>
       <text x="470" y="32" font-size="36" font-weight="700" fill="#eef2fa">Soft drop</text>
-      <text x="470" y="62" font-size="28" fill="#9fb0cc">fall faster, +1 point per row</text>
+      <text x="470" y="62" font-size="33" fill="#9fb0cc">fall faster, +1 point per row</text>
     </g>
 
     <!-- HARD DROP -->
     <g transform="translate(150 600)">
       <rect x="0" y="0" width="214" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="107" y="46" text-anchor="middle" font-size="27" fill="#e8eefc">Space</text>
       <text x="470" y="32" font-size="36" font-weight="700" fill="#eef2fa">Hard drop</text>
-      <text x="470" y="62" font-size="28" fill="#9fb0cc">slam down &amp; lock, +2 per row</text>
+      <text x="470" y="62" font-size="33" fill="#9fb0cc">slam down &amp; lock, +2 per row</text>
     </g>
 
     <!-- HOLD -->
     <g transform="translate(150 700)">
       <rect x="0" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="35" y="47" text-anchor="middle" font-size="30" fill="#e8eefc">C</text>
-      <text x="80" y="45" font-size="27" fill="#9fb0cc">or</text>
+      <text x="80" y="45" font-size="32" fill="#9fb0cc">or</text>
       <rect x="124" y="0" width="96" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="172" y="46" text-anchor="middle" font-size="25" fill="#e8eefc">End</text>
       <text x="470" y="47" font-size="36" font-weight="700" fill="#eef2fa">Hold piece</text>
     </g>
@@ -67,11 +67,11 @@
     <!-- PAUSE -->
     <g transform="translate(150 800)">
       <rect x="0" y="0" width="86" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="43" y="46" text-anchor="middle" font-size="25" fill="#e8eefc">Esc</text>
-      <text x="96" y="45" font-size="27" fill="#9fb0cc">or</text>
+      <text x="96" y="45" font-size="32" fill="#9fb0cc">or</text>
       <rect x="140" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="175" y="47" text-anchor="middle" font-size="30" fill="#e8eefc">P</text>
       <text x="470" y="47" font-size="36" font-weight="700" fill="#eef2fa">Pause</text>
     </g>
   </g>
 
-  <text x="640" y="922" text-anchor="middle" font-size="26" fill="#8fa0bc">a gamepad works too — d-pad to move, face buttons to rotate / drop / hold</text>
+  <text x="640" y="922" text-anchor="middle" font-size="31" fill="#8fa0bc">a gamepad works too — d-pad to move, face buttons to rotate / drop / hold</text>
 </svg>

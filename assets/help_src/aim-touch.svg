@@ -12,7 +12,7 @@
 
   <text x="480" y="96" text-anchor="middle" font-size="52" font-weight="700" fill="#eef2fa" letter-spacing="2">AIM = AUTO-ROTATE</text>
   <rect x="300" y="116" width="360" height="4" rx="2" fill="#f0c02a"/>
-  <text x="480" y="162" text-anchor="middle" font-size="31" fill="#9fb0cc">swipe to a column — the piece spins and drops to fit</text>
+  <text x="480" y="162" text-anchor="middle" font-size="36" fill="#9fb0cc">swipe to a column — it spins and drops to fit</text>
 
   <!-- well 6x10, cell 56, origin 312,206 -->
   <rect x="312" y="206" width="336" height="560" fill="#0c0f17" stroke="#2c3547" stroke-width="3"/>
@@ -62,10 +62,10 @@
   </g>
   <path d="M694 628 L 662 628" stroke="#5c6b86" stroke-width="2"/>
   <text x="706" y="620" font-size="30" font-weight="700" fill="#eef2fa">your finger</text>
-  <text x="706" y="652" font-size="26" fill="#9fb0cc">swipe to move it</text>
+  <text x="706" y="652" font-size="31" fill="#9fb0cc">swipe to move it</text>
 
   <!-- captions -->
   <text x="480" y="892" text-anchor="middle" font-size="40" font-weight="700" fill="#eef2fa">You pick the column.</text>
   <text x="480" y="946" text-anchor="middle" font-size="40" font-weight="700" fill="#f0c02a">The game rotates &amp; places it.</text>
-  <text x="480" y="1004" text-anchor="middle" font-size="28" fill="#9fb0cc">double-tap for a different rotation</text>
+  <text x="480" y="1004" text-anchor="middle" font-size="33" fill="#9fb0cc">double-tap for a different rotation</text>
 </svg>

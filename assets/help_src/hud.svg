@@ -7,58 +7,57 @@
   <rect width="1280" height="960" fill="url(#bg)"/>
   <rect x="18" y="18" width="1244" height="924" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
 
-  <text x="640" y="104" text-anchor="middle" font-size="60" font-weight="700" fill="#eef2fa" letter-spacing="5">THE BUTTONS</text>
-  <rect x="512" y="124" width="256" height="4" rx="2" fill="#f0c02a"/>
-  <text x="640" y="176" text-anchor="middle" font-size="29" fill="#9fb0cc">two frosted icons in the top corners — never over the field</text>
+  <text x="640" y="102" text-anchor="middle" font-size="60" font-weight="700" fill="#eef2fa" letter-spacing="5">THE BUTTONS</text>
+  <rect x="512" y="122" width="256" height="4" rx="2" fill="#f0c02a"/>
+  <text x="640" y="176" text-anchor="middle" font-size="33" fill="#9fb0cc">two frosted icons in the top corners — never over the field</text>
 
   <!-- HOLD -->
-  <g transform="translate(330 320)">
-    <circle cx="0" cy="0" r="84" fill="#d9e6ff" fill-opacity="0.14" stroke="#d9e6ff" stroke-opacity="0.35" stroke-width="3"/>
-    <g stroke="#e8eefc" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M-34 -15 L 32 -15"/><path d="M17 -31 L 34 -15 L 17 1"/>
-      <path d="M34 17 L -32 17"/><path d="M-17 1 L -34 17 L -17 33"/>
+  <g transform="translate(300 300)">
+    <circle cx="0" cy="0" r="72" fill="#d9e6ff" fill-opacity="0.14" stroke="#d9e6ff" stroke-opacity="0.35" stroke-width="3"/>
+    <g stroke="#e8eefc" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-30 -13 L 28 -13"/><path d="M15 -27 L 30 -13 L 15 1"/>
+      <path d="M30 15 L -28 15"/><path d="M-15 1 L -30 15 L -15 29"/>
     </g>
   </g>
-  <text x="330" y="470" text-anchor="middle" font-size="40" font-weight="700" fill="#eef2fa">HOLD</text>
-  <text x="330" y="518" text-anchor="middle" font-size="30" fill="#c7d2e6">Park the current piece.</text>
-  <text x="330" y="556" text-anchor="middle" font-size="30" fill="#c7d2e6">Tap again to swap it back —</text>
-  <text x="330" y="594" text-anchor="middle" font-size="30" fill="#c7d2e6">once per piece.</text>
-  <text x="330" y="640" text-anchor="middle" font-size="25" fill="#8fa0bc">keyboard C / End · right-click</text>
+  <text x="410" y="264" font-size="42" font-weight="700" fill="#eef2fa">HOLD</text>
+  <text x="410" y="312" font-size="31" fill="#c7d2e6">Park the current piece. Tap again to swap</text>
+  <text x="410" y="350" font-size="31" fill="#c7d2e6">it back in — once per piece.</text>
+  <text x="410" y="394" font-size="29" fill="#9fb0cc">keyboard: C / End   ·   mouse: right-click</text>
 
   <!-- PAUSE -->
-  <g transform="translate(950 320)">
-    <circle cx="0" cy="0" r="84" fill="#d9e6ff" fill-opacity="0.14" stroke="#d9e6ff" stroke-opacity="0.35" stroke-width="3"/>
-    <circle cx="0" cy="0" r="50" fill="none" stroke="#e8eefc" stroke-width="7"/>
-    <rect x="-22" y="-26" width="17" height="52" rx="4" fill="#e8eefc"/>
-    <rect x="5" y="-26" width="17" height="52" rx="4" fill="#e8eefc"/>
+  <g transform="translate(300 540)">
+    <circle cx="0" cy="0" r="72" fill="#d9e6ff" fill-opacity="0.14" stroke="#d9e6ff" stroke-opacity="0.35" stroke-width="3"/>
+    <circle cx="0" cy="0" r="44" fill="none" stroke="#e8eefc" stroke-width="6"/>
+    <rect x="-19" y="-23" width="15" height="46" rx="4" fill="#e8eefc"/>
+    <rect x="4" y="-23" width="15" height="46" rx="4" fill="#e8eefc"/>
   </g>
-  <text x="950" y="470" text-anchor="middle" font-size="40" font-weight="700" fill="#eef2fa">PAUSE</text>
-  <text x="950" y="518" text-anchor="middle" font-size="30" fill="#c7d2e6">Open the menu: resume,</text>
-  <text x="950" y="556" text-anchor="middle" font-size="30" fill="#c7d2e6">settings, how to play, restart.</text>
-  <text x="950" y="640" text-anchor="middle" font-size="25" fill="#8fa0bc">keyboard Esc / P</text>
+  <text x="410" y="512" font-size="42" font-weight="700" fill="#eef2fa">PAUSE</text>
+  <text x="410" y="560" font-size="31" fill="#c7d2e6">Open the menu: resume, settings,</text>
+  <text x="410" y="598" font-size="31" fill="#c7d2e6">how to play, restart.</text>
+  <text x="410" y="642" font-size="29" fill="#9fb0cc">keyboard: Esc / P</text>
 
-  <!-- placement: a mini board with the two icons at its top corners -->
-  <rect x="556" y="708" width="168" height="210" rx="6" fill="#0c0f17" stroke="#2c3547" stroke-width="3"/>
+  <!-- where they sit on screen -->
+  <rect x="552" y="700" width="176" height="220" rx="6" fill="#0c0f17" stroke="#2c3547" stroke-width="3"/>
   <g stroke="#1b2230" stroke-width="1">
-    <line x1="598" y1="708" x2="598" y2="918"/><line x1="640" y1="708" x2="640" y2="918"/><line x1="682" y1="708" x2="682" y2="918"/>
-    <line x1="556" y1="760" x2="724" y2="760"/><line x1="556" y1="812" x2="724" y2="812"/><line x1="556" y1="864" x2="724" y2="864"/>
+    <line x1="596" y1="700" x2="596" y2="920"/><line x1="640" y1="700" x2="640" y2="920"/><line x1="684" y1="700" x2="684" y2="920"/>
+    <line x1="552" y1="754" x2="728" y2="754"/><line x1="552" y1="808" x2="728" y2="808"/><line x1="552" y1="862" x2="728" y2="862"/>
   </g>
-  <g transform="translate(540 720)">
-    <circle cx="0" cy="0" r="30" fill="#d9e6ff" fill-opacity="0.16" stroke="#d9e6ff" stroke-opacity="0.4" stroke-width="2"/>
-    <g stroke="#e8eefc" stroke-width="4" fill="none" stroke-linecap="round"><path d="M-13 -6 L 12 -6"/><path d="M6 -12 L 13 -6 L 6 0"/><path d="M13 6 L -12 6"/><path d="M-6 0 L -13 6 L -6 12"/></g>
+  <g transform="translate(536 712)">
+    <circle cx="0" cy="0" r="28" fill="#d9e6ff" fill-opacity="0.16" stroke="#d9e6ff" stroke-opacity="0.4" stroke-width="2"/>
+    <g stroke="#e8eefc" stroke-width="3.5" fill="none" stroke-linecap="round"><path d="M-12 -5 L 11 -5"/><path d="M5 -11 L 12 -5 L 5 1"/><path d="M12 5 L -11 5"/><path d="M-5 1 L -12 5 L -5 11"/></g>
   </g>
-  <g transform="translate(740 720)">
-    <circle cx="0" cy="0" r="30" fill="#d9e6ff" fill-opacity="0.16" stroke="#d9e6ff" stroke-opacity="0.4" stroke-width="2"/>
-    <circle cx="0" cy="0" r="17" fill="none" stroke="#e8eefc" stroke-width="3"/>
-    <rect x="-7" y="-9" width="5" height="18" rx="1.5" fill="#e8eefc"/><rect x="2" y="-9" width="5" height="18" rx="1.5" fill="#e8eefc"/>
+  <g transform="translate(744 712)">
+    <circle cx="0" cy="0" r="28" fill="#d9e6ff" fill-opacity="0.16" stroke="#d9e6ff" stroke-opacity="0.4" stroke-width="2"/>
+    <circle cx="0" cy="0" r="16" fill="none" stroke="#e8eefc" stroke-width="3"/>
+    <rect x="-6.5" y="-8" width="5" height="16" rx="1.5" fill="#e8eefc"/><rect x="1.5" y="-8" width="5" height="16" rx="1.5" fill="#e8eefc"/>
   </g>
-  <rect x="560" y="714" width="56" height="40" rx="4" fill="#0c0f17" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.5"/>
-  <g fill="#a64bd6"><rect x="579" y="725" width="9" height="9"/><rect x="570" y="735" width="9" height="9"/><rect x="579" y="735" width="9" height="9"/><rect x="588" y="735" width="9" height="9"/></g>
-  <rect x="664" y="714" width="56" height="40" rx="4" fill="#0c0f17" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.5"/>
-  <g fill="#e88b2a"><rect x="675" y="735" width="9" height="9"/><rect x="684" y="735" width="9" height="9"/><rect x="693" y="735" width="9" height="9"/><rect x="693" y="725" width="9" height="9"/></g>
+  <rect x="556" y="706" width="56" height="40" rx="4" fill="#0c0f17" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.5"/>
+  <g fill="#a64bd6"><rect x="575" y="717" width="9" height="9"/><rect x="566" y="727" width="9" height="9"/><rect x="575" y="727" width="9" height="9"/><rect x="584" y="727" width="9" height="9"/></g>
+  <rect x="668" y="706" width="56" height="40" rx="4" fill="#0c0f17" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.5"/>
+  <g fill="#e88b2a"><rect x="679" y="727" width="9" height="9"/><rect x="688" y="727" width="9" height="9"/><rect x="697" y="727" width="9" height="9"/><rect x="697" y="717" width="9" height="9"/></g>
 
-  <text x="512" y="812" text-anchor="end" font-size="25" fill="#9fb0cc">Hold + held</text>
-  <text x="512" y="842" text-anchor="end" font-size="25" fill="#9fb0cc">piece</text>
-  <text x="768" y="812" font-size="25" fill="#9fb0cc">Pause + next</text>
-  <text x="768" y="842" font-size="25" fill="#9fb0cc">piece</text>
+  <text x="500" y="796" text-anchor="end" font-size="30" fill="#9fb0cc">Hold +</text>
+  <text x="500" y="832" text-anchor="end" font-size="30" fill="#9fb0cc">held piece</text>
+  <text x="780" y="796" font-size="30" fill="#9fb0cc">Pause +</text>
+  <text x="780" y="832" font-size="30" fill="#9fb0cc">next piece</text>
 </svg>

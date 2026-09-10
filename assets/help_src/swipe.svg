@@ -12,7 +12,7 @@
 
   <text x="480" y="96" text-anchor="middle" font-size="58" font-weight="700" fill="#eef2fa" letter-spacing="4">SWIPE &amp; TAP</text>
   <rect x="360" y="116" width="240" height="4" rx="2" fill="#f0c02a"/>
-  <text x="480" y="162" text-anchor="middle" font-size="30" fill="#9fb0cc">swipe anywhere — there is no on-screen pad</text>
+  <text x="480" y="162" text-anchor="middle" font-size="35" fill="#9fb0cc">swipe anywhere — there is no on-screen pad</text>
 
   <!-- board -->
   <rect x="350" y="210" width="260" height="440" rx="8" fill="#0c0f17" stroke="#2c3547" stroke-width="3"/>
@@ -33,19 +33,19 @@
 
   <!-- callouts -->
   <text x="480" y="726" text-anchor="middle" font-size="38" font-weight="700" fill="#eef2fa">Swipe ← → : aim the column</text>
-  <text x="480" y="768" text-anchor="middle" font-size="28" fill="#9fb0cc">one cell per short drag — the ghost auto-fits the rotation</text>
+  <text x="480" y="768" text-anchor="middle" font-size="33" fill="#9fb0cc">one short drag = one cell — the ghost auto-fits</text>
 
   <g transform="translate(150 858)">
     <circle cx="30" cy="0" r="32" fill="#d9e6ff" fill-opacity="0.12" stroke="#d9e6ff" stroke-opacity="0.3" stroke-width="2"/>
     <circle cx="30" cy="0" r="9" fill="#e8eefc"/>
     <text x="88" y="-2" font-size="35" font-weight="700" fill="#eef2fa">Tap — hard drop</text>
-    <text x="88" y="36" font-size="27" fill="#9fb0cc">drop straight to the ghost</text>
+    <text x="88" y="36" font-size="32" fill="#9fb0cc">drop straight to the ghost</text>
   </g>
   <g transform="translate(150 968)">
     <circle cx="16" cy="0" r="30" fill="#d9e6ff" fill-opacity="0.12" stroke="#d9e6ff" stroke-opacity="0.3" stroke-width="2"/>
     <circle cx="50" cy="0" r="30" fill="#d9e6ff" fill-opacity="0.12" stroke="#d9e6ff" stroke-opacity="0.3" stroke-width="2"/>
     <text x="104" y="-2" font-size="35" font-weight="700" fill="#eef2fa">Double-tap — rotate</text>
-    <text x="104" y="36" font-size="27" fill="#9fb0cc">override the auto-fit orientation</text>
+    <text x="104" y="36" font-size="32" fill="#9fb0cc">override the auto-fit orientation</text>
   </g>
   <g transform="translate(150 1078)">
     <path d="M26 -30 L26 24" stroke="#e8eefc" stroke-width="7" fill="none" marker-end="url(#ah)"/>

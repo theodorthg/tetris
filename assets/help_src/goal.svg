@@ -11,39 +11,39 @@
   <rect x="470" y="120" width="340" height="4" rx="2" fill="#f0c02a"/>
 
   <!-- rules: 2 x 2 -->
-  <g font-size="30" fill="#c7d2e6">
-    <g transform="translate(84 196)">
-      <rect x="0" y="-30" width="32" height="32" rx="5" fill="#3fd160"/>
-      <text x="50" y="-3" font-size="34" font-weight="700" fill="#eef2fa">Clear lines</text>
-      <text x="50" y="40" fill="#9fb0cc">Fill every cell in a row and it clears.</text>
-      <text x="50" y="78" fill="#9fb0cc">Stack tops out → game over.</text>
+  <g font-size="33" fill="#c7d2e6">
+    <g transform="translate(72 198)">
+      <rect x="0" y="-32" width="34" height="34" rx="5" fill="#3fd160"/>
+      <text x="52" y="-3" font-size="37" font-weight="700" fill="#eef2fa">Clear lines</text>
+      <text x="52" y="44" fill="#9fb0cc">Fill a whole row and it clears.</text>
+      <text x="52" y="86" fill="#9fb0cc">Stack tops out → game over.</text>
     </g>
-    <g transform="translate(680 196)">
-      <rect x="0" y="-30" width="32" height="32" rx="5" fill="#4b6bd6"/>
-      <text x="50" y="-3" font-size="34" font-weight="700" fill="#eef2fa">Level up</text>
-      <text x="50" y="40" fill="#9fb0cc">Every 10 lines. Pieces fall faster,</text>
-      <text x="50" y="78" fill="#9fb0cc">every point worth more.</text>
+    <g transform="translate(690 198)">
+      <rect x="0" y="-32" width="34" height="34" rx="5" fill="#4b6bd6"/>
+      <text x="52" y="-3" font-size="37" font-weight="700" fill="#eef2fa">Level up</text>
+      <text x="52" y="44" fill="#9fb0cc">Every 10 lines — faster fall,</text>
+      <text x="52" y="86" fill="#9fb0cc">every point worth more.</text>
     </g>
-    <g transform="translate(84 356)">
-      <rect x="0" y="-30" width="32" height="32" rx="5" fill="#a64bd6"/>
-      <text x="50" y="-3" font-size="34" font-weight="700" fill="#eef2fa">Ghost &amp; Next</text>
-      <text x="50" y="40" fill="#9fb0cc">The dashed ghost shows the landing;</text>
-      <text x="50" y="78" fill="#9fb0cc">the Next box shows what's coming.</text>
+    <g transform="translate(72 368)">
+      <rect x="0" y="-32" width="34" height="34" rx="5" fill="#a64bd6"/>
+      <text x="52" y="-3" font-size="37" font-weight="700" fill="#eef2fa">Ghost &amp; Next</text>
+      <text x="52" y="44" fill="#9fb0cc">Dashed ghost shows the landing;</text>
+      <text x="52" y="86" fill="#9fb0cc">the Next box shows what's next.</text>
     </g>
-    <g transform="translate(680 356)">
-      <rect x="0" y="-30" width="32" height="32" rx="5" fill="#e88b2a"/>
-      <text x="50" y="-3" font-size="34" font-weight="700" fill="#eef2fa">Multi-line = more points</text>
-      <text x="50" y="40" fill="#9fb0cc">Four rows at once (a “Tetris”) is</text>
-      <text x="50" y="78" fill="#9fb0cc">worth 8× a single — clear greedily.</text>
+    <g transform="translate(690 368)">
+      <rect x="0" y="-32" width="34" height="34" rx="5" fill="#e88b2a"/>
+      <text x="52" y="-3" font-size="37" font-weight="700" fill="#eef2fa">Multi-line = more points</text>
+      <text x="52" y="44" fill="#9fb0cc">Four rows at once (a “Tetris”)</text>
+      <text x="52" y="86" fill="#9fb0cc">= 8× a single. Clear greedily.</text>
     </g>
   </g>
 
   <!-- score values panel -->
-  <rect x="84" y="486" width="1112" height="392" rx="16" fill="#12161f" stroke="#2c3547" stroke-width="2"/>
-  <text x="640" y="546" text-anchor="middle" font-size="34" font-weight="700" fill="#2ad4d4" letter-spacing="3">SCORE VALUES</text>
+  <rect x="84" y="482" width="1112" height="398" rx="16" fill="#12161f" stroke="#2c3547" stroke-width="2"/>
+  <text x="640" y="544" text-anchor="middle" font-size="37" font-weight="700" fill="#2ad4d4" letter-spacing="3">SCORE VALUES</text>
   <line x1="120" y1="574" x2="1160" y2="574" stroke="#2c3547" stroke-width="2"/>
 
-  <g font-size="33" fill="#e6ecf6">
+  <g font-size="36" fill="#e6ecf6">
     <!-- left column -->
     <text x="140" y="638">Single line</text><text x="600" y="638" text-anchor="end">100</text>
     <line x1="140" y1="664" x2="600" y2="664" stroke="#212a38" stroke-width="1"/>

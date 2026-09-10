@@ -9,7 +9,7 @@
 
   <text x="640" y="102" text-anchor="middle" font-size="60" font-weight="700" fill="#eef2fa" letter-spacing="5">THE BUTTONS</text>
   <rect x="512" y="122" width="256" height="4" rx="2" fill="#f0c02a"/>
-  <text x="640" y="176" text-anchor="middle" font-size="33" fill="#9fb0cc">two frosted icons in the top corners — never over the field</text>
+  <text x="640" y="176" text-anchor="middle" font-size="37" fill="#9fb0cc">two frosted icons in the top corners — never over the field</text>
 
   <!-- HOLD -->
   <g transform="translate(300 300)">
@@ -19,10 +19,10 @@
       <path d="M30 15 L -28 15"/><path d="M-15 1 L -30 15 L -15 29"/>
     </g>
   </g>
-  <text x="410" y="264" font-size="42" font-weight="700" fill="#eef2fa">HOLD</text>
-  <text x="410" y="312" font-size="31" fill="#c7d2e6">Park the current piece. Tap again to swap</text>
-  <text x="410" y="350" font-size="31" fill="#c7d2e6">it back in — once per piece.</text>
-  <text x="410" y="394" font-size="29" fill="#9fb0cc">keyboard: C / End   ·   mouse: right-click</text>
+  <text x="410" y="262" font-size="46" font-weight="700" fill="#eef2fa">HOLD</text>
+  <text x="410" y="312" font-size="35" fill="#c7d2e6">Park the current piece. Tap again to swap</text>
+  <text x="410" y="352" font-size="35" fill="#c7d2e6">it back in — once per piece.</text>
+  <text x="410" y="398" font-size="34" fill="#9fb0cc">keyboard: C / End   ·   mouse: right-click</text>
 
   <!-- PAUSE -->
   <g transform="translate(300 540)">
@@ -31,10 +31,10 @@
     <rect x="-19" y="-23" width="15" height="46" rx="4" fill="#e8eefc"/>
     <rect x="4" y="-23" width="15" height="46" rx="4" fill="#e8eefc"/>
   </g>
-  <text x="410" y="512" font-size="42" font-weight="700" fill="#eef2fa">PAUSE</text>
-  <text x="410" y="560" font-size="31" fill="#c7d2e6">Open the menu: resume, settings,</text>
-  <text x="410" y="598" font-size="31" fill="#c7d2e6">how to play, restart.</text>
-  <text x="410" y="642" font-size="29" fill="#9fb0cc">keyboard: Esc / P</text>
+  <text x="410" y="510" font-size="46" font-weight="700" fill="#eef2fa">PAUSE</text>
+  <text x="410" y="560" font-size="35" fill="#c7d2e6">Open the menu: resume, settings,</text>
+  <text x="410" y="600" font-size="35" fill="#c7d2e6">how to play, restart.</text>
+  <text x="410" y="646" font-size="34" fill="#9fb0cc">keyboard: Esc / P</text>
 
   <!-- where they sit on screen -->
   <rect x="552" y="700" width="176" height="220" rx="6" fill="#0c0f17" stroke="#2c3547" stroke-width="3"/>
@@ -56,8 +56,8 @@
   <rect x="668" y="706" width="56" height="40" rx="4" fill="#0c0f17" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.5"/>
   <g fill="#e88b2a"><rect x="679" y="727" width="9" height="9"/><rect x="688" y="727" width="9" height="9"/><rect x="697" y="727" width="9" height="9"/><rect x="697" y="717" width="9" height="9"/></g>
 
-  <text x="500" y="796" text-anchor="end" font-size="30" fill="#9fb0cc">Hold +</text>
-  <text x="500" y="832" text-anchor="end" font-size="30" fill="#9fb0cc">held piece</text>
-  <text x="780" y="796" font-size="30" fill="#9fb0cc">Pause +</text>
-  <text x="780" y="832" font-size="30" fill="#9fb0cc">next piece</text>
+  <text x="500" y="794" text-anchor="end" font-size="34" fill="#9fb0cc">Hold +</text>
+  <text x="500" y="834" text-anchor="end" font-size="34" fill="#9fb0cc">held piece</text>
+  <text x="780" y="794" font-size="34" fill="#9fb0cc">Pause +</text>
+  <text x="780" y="834" font-size="34" fill="#9fb0cc">next piece</text>
 </svg>

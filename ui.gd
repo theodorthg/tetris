@@ -272,6 +272,11 @@ func show_help(from: int = Screen.START) -> void:
 	if _splash_overlay:
 		_splash_overlay.queue_free()
 		_splash_overlay = null
+	# drop focus from whatever button opened this, so the arrow keys reach
+	# _unhandled_input instead of being eaten as UI focus navigation
+	var focused := get_viewport().gui_get_focus_owner()
+	if focused:
+		focused.release_focus()
 	_build_help_overlay()
 	_help_go(0)
 

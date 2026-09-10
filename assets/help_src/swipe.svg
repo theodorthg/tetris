@@ -12,49 +12,44 @@
 
   <text x="480" y="96" text-anchor="middle" font-size="58" font-weight="700" fill="#eef2fa" letter-spacing="4">SWIPE &amp; TAP</text>
   <rect x="360" y="116" width="240" height="4" rx="2" fill="#f0c02a"/>
-  <text x="480" y="158" text-anchor="middle" font-size="25" fill="#9fb0cc">swipe anywhere on the screen — no on-screen pad</text>
+  <text x="480" y="162" text-anchor="middle" font-size="30" fill="#9fb0cc">swipe anywhere — there is no on-screen pad</text>
 
   <!-- board -->
-  <rect x="330" y="230" width="300" height="600" rx="8" fill="#0c0f17" stroke="#2c3547" stroke-width="3"/>
+  <rect x="350" y="210" width="260" height="440" rx="8" fill="#0c0f17" stroke="#2c3547" stroke-width="3"/>
   <g stroke="#1b2230" stroke-width="1">
-    <line x1="390" y1="230" x2="390" y2="830"/><line x1="450" y1="230" x2="450" y2="830"/>
-    <line x1="510" y1="230" x2="510" y2="830"/><line x1="570" y1="230" x2="570" y2="830"/>
-    <line x1="330" y1="350" x2="630" y2="350"/><line x1="330" y1="470" x2="630" y2="470"/>
-    <line x1="330" y1="590" x2="630" y2="590"/><line x1="330" y1="710" x2="630" y2="710"/>
+    <line x1="402" y1="210" x2="402" y2="650"/><line x1="454" y1="210" x2="454" y2="650"/>
+    <line x1="506" y1="210" x2="506" y2="650"/><line x1="558" y1="210" x2="558" y2="650"/>
+    <line x1="350" y1="298" x2="610" y2="298"/><line x1="350" y1="386" x2="610" y2="386"/>
+    <line x1="350" y1="474" x2="610" y2="474"/><line x1="350" y1="562" x2="610" y2="562"/>
   </g>
-  <!-- a piece + ghost -->
-  <g fill="#a64bd6"><rect x="451" y="231" width="58" height="58"/><rect x="391" y="289" width="58" height="58"/><rect x="451" y="289" width="58" height="58"/><rect x="511" y="289" width="58" height="58"/></g>
+  <g fill="#a64bd6"><rect x="455" y="211" width="50" height="50"/><rect x="403" y="263" width="50" height="50"/><rect x="455" y="263" width="50" height="50"/><rect x="507" y="263" width="50" height="50"/></g>
   <g fill="#a64bd6" fill-opacity="0.15" stroke="#a64bd6" stroke-width="3" stroke-dasharray="7 5">
-    <rect x="392" y="710" width="56" height="56"/><rect x="392" y="768" width="56" height="56"/>
-    <rect x="452" y="768" width="56" height="56"/><rect x="512" y="768" width="56" height="56"/>
+    <rect x="404" y="562" width="48" height="48"/><rect x="404" y="600" width="48" height="48"/>
+    <rect x="456" y="600" width="48" height="48"/><rect x="508" y="600" width="48" height="48"/>
   </g>
-
-  <!-- horizontal swipe arrow across the board -->
-  <g stroke="#f0c02a" stroke-width="6" fill="none">
-    <line x1="250" y1="530" x2="710" y2="530" marker-start="url(#ah)" marker-end="url(#ah)"/>
+  <g stroke="#f0c02a" stroke-width="7" fill="none">
+    <line x1="280" y1="430" x2="680" y2="430" marker-start="url(#ah)" marker-end="url(#ah)"/>
   </g>
 
   <!-- callouts -->
-  <g>
-    <text x="480" y="900" text-anchor="middle" font-size="30" font-weight="700" fill="#eef2fa">Swipe left / right  —  aim the column</text>
-    <text x="480" y="936" text-anchor="middle" font-size="23" fill="#9fb0cc">one cell per short drag; the ghost auto-fits the rotation</text>
+  <text x="480" y="726" text-anchor="middle" font-size="38" font-weight="700" fill="#eef2fa">Swipe ← → : aim the column</text>
+  <text x="480" y="768" text-anchor="middle" font-size="28" fill="#9fb0cc">one cell per short drag — the ghost auto-fits the rotation</text>
 
-    <g transform="translate(120 1000)">
-      <circle cx="26" cy="0" r="26" fill="#d9e6ff" fill-opacity="0.12" stroke="#d9e6ff" stroke-opacity="0.3" stroke-width="2"/>
-      <circle cx="26" cy="0" r="7" fill="#e8eefc"/>
-      <text x="72" y="-4" font-size="28" font-weight="700" fill="#eef2fa">Tap  —  hard drop</text>
-      <text x="72" y="28" font-size="22" fill="#9fb0cc">drop it straight to the ghost</text>
-    </g>
-    <g transform="translate(120 1090)">
-      <circle cx="12" cy="0" r="24" fill="#d9e6ff" fill-opacity="0.12" stroke="#d9e6ff" stroke-opacity="0.3" stroke-width="2"/>
-      <circle cx="40" cy="0" r="24" fill="#d9e6ff" fill-opacity="0.12" stroke="#d9e6ff" stroke-opacity="0.3" stroke-width="2"/>
-      <text x="86" y="-4" font-size="28" font-weight="700" fill="#eef2fa">Double-tap  —  rotate</text>
-      <text x="86" y="28" font-size="22" fill="#9fb0cc">override the auto-fit orientation</text>
-    </g>
-    <g transform="translate(120 1180)">
-      <path d="M20 -22 L20 18" stroke="#e8eefc" stroke-width="6" fill="none" marker-end="url(#ah)"/>
-      <text x="86" y="-4" font-size="28" font-weight="700" fill="#eef2fa">Hold &amp; drag down  —  soft drop</text>
-      <text x="86" y="28" font-size="22" fill="#9fb0cc">ease it down faster</text>
-    </g>
+  <g transform="translate(150 858)">
+    <circle cx="30" cy="0" r="32" fill="#d9e6ff" fill-opacity="0.12" stroke="#d9e6ff" stroke-opacity="0.3" stroke-width="2"/>
+    <circle cx="30" cy="0" r="9" fill="#e8eefc"/>
+    <text x="88" y="-2" font-size="35" font-weight="700" fill="#eef2fa">Tap — hard drop</text>
+    <text x="88" y="36" font-size="27" fill="#9fb0cc">drop straight to the ghost</text>
+  </g>
+  <g transform="translate(150 968)">
+    <circle cx="16" cy="0" r="30" fill="#d9e6ff" fill-opacity="0.12" stroke="#d9e6ff" stroke-opacity="0.3" stroke-width="2"/>
+    <circle cx="50" cy="0" r="30" fill="#d9e6ff" fill-opacity="0.12" stroke="#d9e6ff" stroke-opacity="0.3" stroke-width="2"/>
+    <text x="104" y="-2" font-size="35" font-weight="700" fill="#eef2fa">Double-tap — rotate</text>
+    <text x="104" y="36" font-size="27" fill="#9fb0cc">override the auto-fit orientation</text>
+  </g>
+  <g transform="translate(150 1078)">
+    <path d="M26 -30 L26 24" stroke="#e8eefc" stroke-width="7" fill="none" marker-end="url(#ah)"/>
+    <text x="88" y="-2" font-size="35" font-weight="700" fill="#eef2fa">Hold &amp; drag down —</text>
+    <text x="88" y="36" font-size="35" font-weight="700" fill="#eef2fa">soft drop</text>
   </g>
 </svg>

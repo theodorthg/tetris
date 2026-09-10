@@ -15,7 +15,7 @@
   <!-- header -->
   <text x="640" y="104" text-anchor="middle" font-size="60" font-weight="700" fill="#eef2fa" letter-spacing="3">AIM  =  AUTO-ROTATE</text>
   <rect x="470" y="124" width="340" height="4" rx="2" fill="#f0c02a"/>
-  <text x="640" y="166" text-anchor="middle" font-size="27" fill="#9fb0cc">Point at a column — the piece spins and drops to fit</text>
+  <text x="640" y="166" text-anchor="middle" font-size="32" fill="#9fb0cc">Point at a column — the piece spins and drops to fit</text>
 
   <!-- ===== well (6 x 10, cell 58, origin 466,196) ===== -->
   <g>
@@ -73,19 +73,19 @@
       <path d="M-18 10 l -10 -6 l 12 -6 z" fill="#f0c02a"/>
     </g>
   </g>
-  <text x="946" y="372" font-size="23" font-weight="700" fill="#f0c02a">rotates</text>
-  <text x="946" y="400" font-size="23" font-weight="700" fill="#f0c02a">to fit</text>
+  <text x="946" y="372" font-size="28" font-weight="700" fill="#f0c02a">rotates</text>
+  <text x="946" y="400" font-size="28" font-weight="700" fill="#f0c02a">to fit</text>
 
   <!-- pointer aiming at the 2nd-from-bottom cell of the target column -->
   <g transform="translate(760 640) scale(2.05)">
     <path d="M0 0 L0 34 L9 26 L15 40 L21 37 L15 23 L27 23 Z" fill="#ffffff" stroke="#0b0e15" stroke-width="2"/>
   </g>
   <path d="M900 684 L 826 684" stroke="#5c6b86" stroke-width="2"/>
-  <text x="912" y="678" font-size="26" font-weight="700" fill="#eef2fa">mouse-pointer</text>
-  <text x="912" y="708" font-size="22" fill="#9fb0cc">you move it — the piece follows</text>
+  <text x="912" y="678" font-size="31" font-weight="700" fill="#eef2fa">mouse-pointer</text>
+  <text x="912" y="708" font-size="27" fill="#9fb0cc">you move it</text>
 
   <!-- captions -->
-  <text x="640" y="836" text-anchor="middle" font-size="30" font-weight="700" fill="#eef2fa">You choose the column.</text>
-  <text x="640" y="878" text-anchor="middle" font-size="30" font-weight="700" fill="#f0c02a">The game rotates &amp; places the piece.</text>
-  <text x="640" y="916" text-anchor="middle" font-size="22" fill="#9fb0cc">the dashed ghost always shows where it will land</text>
+  <text x="640" y="836" text-anchor="middle" font-size="37" font-weight="700" fill="#eef2fa">You choose the column.</text>
+  <text x="640" y="878" text-anchor="middle" font-size="37" font-weight="700" fill="#f0c02a">The game rotates &amp; places it.</text>
+  <text x="640" y="916" text-anchor="middle" font-size="28" fill="#9fb0cc">the dashed ghost always shows where it will land</text>
 </svg>

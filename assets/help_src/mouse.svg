@@ -73,8 +73,9 @@
     <path d="M980 560 C 850 560, 760 470, 654 396"/>
   </g>
   <circle cx="654" cy="396" r="5" fill="#5c6b86"/>
-  <text x="1160" y="556" text-anchor="end" font-size="30" font-weight="700" fill="#eef2fa">Scroll wheel</text>
-  <text x="1160" y="592" text-anchor="end" font-size="24" fill="#9fb0cc">Rotate the piece</text>
+  <text x="1160" y="552" text-anchor="end" font-size="30" font-weight="700" fill="#eef2fa">Scroll wheel</text>
+  <text x="1160" y="588" text-anchor="end" font-size="24" fill="#9fb0cc">Rotate the piece</text>
+  <text x="1160" y="618" text-anchor="end" font-size="21" fill="#8fa0bc">(in menus: page through)</text>
 
   <!-- move (left side, lower) -->
   <g stroke="#5c6b86" stroke-width="2" fill="none">

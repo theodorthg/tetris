@@ -52,8 +52,14 @@
     <circle cx="0" cy="0" r="15" fill="none" stroke="#e8eefc" stroke-width="2.5"/>
     <rect x="-6" y="-8" width="4.5" height="16" rx="1.5" fill="#e8eefc"/><rect x="1.5" y="-8" width="4.5" height="16" rx="1.5" fill="#e8eefc"/>
   </g>
-  <text x="470" y="812" text-anchor="end" font-size="20" fill="#8fa0bc">Hold +</text>
-  <text x="470" y="836" text-anchor="end" font-size="20" fill="#8fa0bc">piece preview</text>
-  <text x="812" y="812" font-size="20" fill="#8fa0bc">Pause +</text>
-  <text x="812" y="836" font-size="20" fill="#8fa0bc">next preview</text>
+  <!-- stylised hold + next previews inside the board top -->
+  <rect x="544" y="694" width="52" height="38" rx="4" fill="#0c0f17" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.5"/>
+  <g fill="#a64bd6"><rect x="561" y="704" width="8" height="8"/><rect x="553" y="713" width="8" height="8"/><rect x="561" y="713" width="8" height="8"/><rect x="569" y="713" width="8" height="8"/></g>
+  <rect x="684" y="694" width="52" height="38" rx="4" fill="#0c0f17" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.5"/>
+  <g fill="#e88b2a"><rect x="694" y="713" width="8" height="8"/><rect x="702" y="713" width="8" height="8"/><rect x="710" y="713" width="8" height="8"/><rect x="710" y="704" width="8" height="8"/></g>
+
+  <text x="470" y="806" text-anchor="end" font-size="20" fill="#8fa0bc">Hold +</text>
+  <text x="470" y="830" text-anchor="end" font-size="20" fill="#8fa0bc">held piece</text>
+  <text x="812" y="806" font-size="20" fill="#8fa0bc">Pause +</text>
+  <text x="812" y="830" font-size="20" fill="#8fa0bc">next piece</text>
 </svg>

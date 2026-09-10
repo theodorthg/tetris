@@ -35,8 +35,11 @@ Aufrufen:
 
 ## Design-Entscheidungen
 
-- **Canvas** 480×800 Portrait, Zelle 32 px, Well bei (80,120). HUD-Band oben
-  (Score/Level/Lines, Hold links, Next rechts).
+- **Design-Canvas** 480×640 (`project.godot`). Layout ist voll responsiv:
+  `main._layout()` rechnet Zellgröße (14–60 px) und jede HUD-Position aus
+  `get_viewport_rect()`, `content_scale_aspect = EXPAND`, neu bei `size_changed`.
+  HUD-Band oben: Score/Level/Lines mittig, Hold-Button+Box links, Pause-Button+
+  Next-Box rechts, jeweils ~35 px außerhalb der Brettkante.
 - **Steuerung**: Tastatur (Pfeile/WASD, X/Z drehen, Space Hard-Drop, C/End
   Hold, Esc/P Pause) · Gamepad · **Maus**: Cursor-Spalte = Ziel, das Spiel
   fittet Drehung+Landung dorthin (BFS + Heuristik, tuckt unter Überhänge),
@@ -44,24 +47,23 @@ Aufrufen:
   Rechtsklick Hold.
 - **Scoring**: 100/300/500/800 ×Level, Soft-Drop +1/Zeile, Hard-Drop +2/Zeile,
   Level alle 10 Zeilen, Gravity `pow(0.8-(l-1)*0.007, l-1)`.
-- **Settings** (`user://settings.cfg`, Abschnitt `game`): `start_level` 1–15,
-  `ghost` on/off. Abschnitt `sound` reserviert (Sounds kommen später).
+- **Settings** (`user://settings.cfg` Abschnitt `game`): `start_level` 1–15,
+  `ghost` on/off, `music` on/off. Abschnitt `sound` = Pro-Sound-Lautstärken
+  (siehe unten).
 - **Hall of Fame** (`user://hall_of_fame.cfg`): Top 10 nach Score, Namenseingabe
   bei Qualifikation am Ende jedes Durchlaufs.
-- **Splash**: `splash-screen.png` (Wurzel) als Boot-Splash und Start-Screen-
-  Hintergrund.
+- **Splash**: `splash-screen.png` (Wurzel) als Boot-Splash, In-Game-Ladescreen
+  und Start-Screen-Hintergrund — überall vollständig, letterboxed auf Schwarz.
 
-## Touch / mobile (fertig, Commit 573d4e9)
+## Touch / mobile (fertig)
 
 - Auto-Erkennung (`OS.has_feature("mobile")` / `DisplayServer.is_touchscreen_available()`,
-  gecacht) + retroaktiver Flip beim ersten echten Screen-Touch.
-- `content_scale_aspect` = **KEEP für alle Geräte** (nicht KEEP_WIDTH): eine
-  480×800-Canvas würde unter KEEP_WIDTH auf 3:4-Tablets abgeschnitten; das
-  breitere HUD-Band trägt die Touch-Buttons, also braucht es keinen Extraraum.
-  Bewusste Abweichung von der pacman-Design-Regel.
-- Swipe: h-Drag = Bewegen (1 Zelle / 26 px), gedrückt-nach-unten = Soft-Drop,
-  schneller Flick nach unten = Hard-Drop, kurzer Tipp = Drehen.
-- On-screen **PAUSE** (links oben) und **HOLD** (rechts oben) im festen Band,
+  gecacht) + retroaktiver Flip beim ersten echten Screen-Touch
+  (`main._enter_touch_mode`).
+- Swipe irgendwo = Ziel-Spalte setzen (Ghost fittet, wie Maus). **1× tippen =
+  Hard-Drop, 2× tippen = drehen** (const `TAP_DROPS`), gedrückt-nach-unten-
+  ziehen = optionaler Soft-Drop.
+- On-screen **HOLD** (links oben) und **PAUSE** (rechts oben) im HUD-Band,
   ausgeblendet bei offenem Menü / Game Over.
 
 ## Hilfe-Screen (bildbasiert)
@@ -71,12 +73,13 @@ Vollbild-Blättern in `ui.gd` (`show_help` / `_build_help_overlay` / `_help_go`)
   Mausrad, den Pfeil-Buttons, Touch-Swipe. `Esc`/`Space`/`Done` → zurück ins
   aufrufende Menü (Start **oder** Pause). Umlauf an.
 - Zwei Seitensätze, `main.set_help_context()` schaltet um:
-  - **Maus:** `mouse` · `aim-mouse` · `hud` · `keyboard` · `goal`
+  - **Maus:** `mouse` · `aim` · `hud` · `keyboard` · `goal`
   - **Touch:** `swipe` · `aim-touch` · `hud` · `goal`
 - Bilder: `assets/graphics/help/<name>.png` (aus `assets/help_src/<name>.svg`,
-  `render.sh`). Fehlt eine PNG → Text-Platzhalter, Seiten kommen einzeln.
-- Fertig: `mouse`, `aim-mouse`. Offen: `hud`, `keyboard`, `goal`, `swipe`,
-  `aim-touch`. Text durchgängig Englisch.
+  `render.sh`, Inkscape → PNG; `ui.gd` lädt sie on-demand per `load()`, **nicht**
+  über `ResourceLoader.exists()` — das ist bei importierten Ressourcen in nativen
+  Exports unzuverlässig). Fehlt eine PNG → Text-Platzhalter.
+- Alle 7 Seiten fertig, Text durchgängig Englisch.
 
 ## Sounds (fertig — `sound_manager.gd`, Autoload `Snd`)
 
@@ -102,7 +105,8 @@ Sound-Settings-Unterseite: pro Sound ein 0–100-Regler, Loslassen = Vorhören.
 ## Offen / später
 
 - Einstellungen: Tastenbelegung im Spiel anpassbar machen.
-- Politur: Line-Clear-Animation, T-Spin/Combo, Level-Up-Feedback.
+- Eigene Sounds für 4 Reihen (Tetris) und 2 Reihen (Doppel) — hat der Nutzer
+  noch nicht; Code routet aktuell 1 → `line1`, 2+ → `lines`.
 - Politur: Line-Clear-Animation, T-Spin/Combo-Scoring, Level-Up-Feedback.
 
 ## Aseprite MCP Pro

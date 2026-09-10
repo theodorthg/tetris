@@ -11,51 +11,51 @@
   <rect x="470" y="120" width="340" height="4" rx="2" fill="#f0c02a"/>
 
   <!-- rules: 2 x 2 -->
-  <g font-size="33" fill="#c7d2e6">
-    <g transform="translate(72 198)">
-      <rect x="0" y="-32" width="34" height="34" rx="5" fill="#3fd160"/>
-      <text x="52" y="-3" font-size="37" font-weight="700" fill="#eef2fa">Clear lines</text>
-      <text x="52" y="44" fill="#9fb0cc">Fill a whole row and it clears.</text>
-      <text x="52" y="86" fill="#9fb0cc">Stack tops out → game over.</text>
+  <g font-size="36" fill="#c7d2e6">
+    <g transform="translate(40 198)">
+      <rect x="0" y="-34" width="36" height="36" rx="5" fill="#3fd160"/>
+      <text x="48" y="-4" font-size="38" font-weight="700" fill="#eef2fa">Clear lines</text>
+      <text x="48" y="42" fill="#9fb0cc">Fill a whole row and it clears.</text>
+      <text x="48" y="82" fill="#9fb0cc">Stack tops out → game over.</text>
     </g>
-    <g transform="translate(690 198)">
-      <rect x="0" y="-32" width="34" height="34" rx="5" fill="#4b6bd6"/>
-      <text x="52" y="-3" font-size="37" font-weight="700" fill="#eef2fa">Level up</text>
-      <text x="52" y="44" fill="#9fb0cc">Every 10 lines — faster fall,</text>
-      <text x="52" y="86" fill="#9fb0cc">every point worth more.</text>
+    <g transform="translate(656 198)">
+      <rect x="0" y="-34" width="36" height="36" rx="5" fill="#4b6bd6"/>
+      <text x="48" y="-4" font-size="38" font-weight="700" fill="#eef2fa">Level up</text>
+      <text x="48" y="42" fill="#9fb0cc">Every 10 lines — faster fall,</text>
+      <text x="48" y="82" fill="#9fb0cc">every point worth more.</text>
     </g>
-    <g transform="translate(72 368)">
-      <rect x="0" y="-32" width="34" height="34" rx="5" fill="#a64bd6"/>
-      <text x="52" y="-3" font-size="37" font-weight="700" fill="#eef2fa">Ghost &amp; Next</text>
-      <text x="52" y="44" fill="#9fb0cc">Dashed ghost shows the landing;</text>
-      <text x="52" y="86" fill="#9fb0cc">the Next box shows what's next.</text>
+    <g transform="translate(40 356)">
+      <rect x="0" y="-34" width="36" height="36" rx="5" fill="#a64bd6"/>
+      <text x="48" y="-4" font-size="38" font-weight="700" fill="#eef2fa">Ghost &amp; Next</text>
+      <text x="48" y="42" fill="#9fb0cc">Ghost shows where it lands.</text>
+      <text x="48" y="82" fill="#9fb0cc">Next box: what's coming.</text>
     </g>
-    <g transform="translate(690 368)">
-      <rect x="0" y="-32" width="34" height="34" rx="5" fill="#e88b2a"/>
-      <text x="52" y="-3" font-size="37" font-weight="700" fill="#eef2fa">Multi-line = more points</text>
-      <text x="52" y="44" fill="#9fb0cc">Four rows at once (a “Tetris”)</text>
-      <text x="52" y="86" fill="#9fb0cc">= 8× a single. Clear greedily.</text>
+    <g transform="translate(656 356)">
+      <rect x="0" y="-34" width="36" height="36" rx="5" fill="#e88b2a"/>
+      <text x="48" y="-4" font-size="38" font-weight="700" fill="#eef2fa">Multi-line = more points</text>
+      <text x="48" y="42" fill="#9fb0cc">Four rows at once (a “Tetris”)</text>
+      <text x="48" y="82" fill="#9fb0cc">= 8× a single. Clear greedily.</text>
     </g>
   </g>
 
   <!-- score values panel -->
-  <rect x="84" y="482" width="1112" height="398" rx="16" fill="#12161f" stroke="#2c3547" stroke-width="2"/>
-  <text x="640" y="544" text-anchor="middle" font-size="37" font-weight="700" fill="#2ad4d4" letter-spacing="3">SCORE VALUES</text>
-  <line x1="120" y1="574" x2="1160" y2="574" stroke="#2c3547" stroke-width="2"/>
+  <rect x="84" y="470" width="1112" height="410" rx="16" fill="#12161f" stroke="#2c3547" stroke-width="2"/>
+  <text x="640" y="530" text-anchor="middle" font-size="37" font-weight="700" fill="#2ad4d4" letter-spacing="3">SCORE VALUES</text>
+  <line x1="120" y1="558" x2="1160" y2="558" stroke="#2c3547" stroke-width="2"/>
 
   <g font-size="36" fill="#e6ecf6">
     <!-- left column -->
-    <text x="140" y="638">Single line</text><text x="600" y="638" text-anchor="end">100</text>
-    <line x1="140" y1="664" x2="600" y2="664" stroke="#212a38" stroke-width="1"/>
-    <text x="140" y="712">Double</text><text x="600" y="712" text-anchor="end">300</text>
-    <line x1="140" y1="738" x2="600" y2="738" stroke="#212a38" stroke-width="1"/>
-    <text x="140" y="786">Triple</text><text x="600" y="786" text-anchor="end">500</text>
+    <text x="140" y="622">Single line</text><text x="600" y="622" text-anchor="end">100</text>
+    <line x1="140" y1="650" x2="600" y2="650" stroke="#212a38" stroke-width="1"/>
+    <text x="140" y="702">Double</text><text x="600" y="702" text-anchor="end">300</text>
+    <line x1="140" y1="730" x2="600" y2="730" stroke="#212a38" stroke-width="1"/>
+    <text x="140" y="782">Triple</text><text x="600" y="782" text-anchor="end">500</text>
     <!-- right column -->
-    <text x="686" y="638" fill="#f0c02a" font-weight="700">Tetris (4 lines)</text><text x="1140" y="638" text-anchor="end" fill="#f0c02a" font-weight="700">800</text>
-    <line x1="686" y1="664" x2="1140" y2="664" stroke="#212a38" stroke-width="1"/>
-    <text x="686" y="712">Soft drop</text><text x="1140" y="712" text-anchor="end">+1 / row</text>
-    <line x1="686" y1="738" x2="1140" y2="738" stroke="#212a38" stroke-width="1"/>
-    <text x="686" y="786">Hard drop</text><text x="1140" y="786" text-anchor="end">+2 / row</text>
+    <text x="686" y="622" fill="#f0c02a" font-weight="700">Tetris (4 lines)</text><text x="1140" y="622" text-anchor="end" fill="#f0c02a" font-weight="700">800</text>
+    <line x1="686" y1="650" x2="1140" y2="650" stroke="#212a38" stroke-width="1"/>
+    <text x="686" y="702">Soft drop</text><text x="1140" y="702" text-anchor="end">+1 / row</text>
+    <line x1="686" y1="730" x2="1140" y2="730" stroke="#212a38" stroke-width="1"/>
+    <text x="686" y="782">Hard drop</text><text x="1140" y="782" text-anchor="end">+2 / row</text>
   </g>
-  <line x1="643" y1="590" x2="643" y2="812" stroke="#2c3547" stroke-width="1"/>
+  <line x1="643" y1="576" x2="643" y2="808" stroke="#2c3547" stroke-width="1"/>
 </svg>

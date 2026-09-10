@@ -110,8 +110,17 @@ func _load() -> void:
 			_vol[key] = clampi(int(cf.get_value("sound", key, d)), 0, 100)
 		else:
 			_vol[key] = d
-	_music_on = bool(cf.get_value("game", "music", true))
+	# a calib bump also re-asserts the music default (on)
+	if calib == CALIB_VERSION:
+		_music_on = bool(cf.get_value("game", "music", true))
+	else:
+		_music_on = true
+		var g := ConfigFile.new()
+		g.load(CFG_PATH)
+		g.set_value("game", "music", true)
+		g.save(CFG_PATH)
 	_apply_music()
+	_save()
 
 
 func _save() -> void:

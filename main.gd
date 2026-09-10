@@ -152,14 +152,17 @@ func _layout() -> void:
 	_hold_box = Rect2(left_cx - box.x * 0.5, hud_y + pb - 2, box.x, box.y)
 	_next_box = Rect2(right_cx - box.x * 0.5, hud_y + pb - 2, box.x, box.y)
 
-	# Score / level / lines stay centred on the board itself.
+	# Score / level / lines: centred on the board, but kept inside the gap between
+	# the two boxes so a short-and-wide window (small board, boxes close in) can't
+	# let the text run under them.
 	var sx := wx + board_w * 0.5
-	_score_label.position = Vector2(sx - 150, hud_y + 4)
-	_score_label.size = Vector2(300, 36)
-	_level_label.position = Vector2(sx - 146, hud_y + 46)
-	_level_label.size = Vector2(138, 20)
-	_lines_label.position = Vector2(sx + 8, hud_y + 46)
-	_lines_label.size = Vector2(138, 20)
+	var inner := maxf((right_cx - left_cx) - box.x - 16.0, 140.0)
+	_score_label.position = Vector2(sx - inner * 0.5, hud_y + 4)
+	_score_label.size = Vector2(inner, 36)
+	_level_label.position = Vector2(sx - inner * 0.5, hud_y + 46)
+	_level_label.size = Vector2(inner * 0.5 - 3.0, 20)
+	_lines_label.position = Vector2(sx + 3.0, hud_y + 46)
+	_lines_label.size = Vector2(inner * 0.5 - 3.0, 20)
 	queue_redraw()
 
 

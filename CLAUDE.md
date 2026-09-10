@@ -3,6 +3,12 @@
 Ergänzt die übergeordnete `CLAUDE.md` unter
 `~/GodotDev/learn_2d_gamedev_godot_4_0.57.0_linux/`.
 
+**Stand: v1.0.4** (`config/version`), Tag `v1.0.4` — Windows-CI grün, GitHub-Release
+mit `tetris-windows-v1.0.4.zip`. Neu seit v1.0.3: Tastenbelegung (Settings →
+Controls), Line-Clear-Flash, T-Spin (Erkennung + Scoring + Flash-Text), Web-PWA
+entfernt, Hilfe-Bilder vergrößert (grau 40 px / Zwischenüberschriften 42 px) &
+vertikal entzerrt.
+
 ## Aufbau
 
 - Godot 4.7, fast alles im Code. Eine winzige `main.tscn` (nur `Main`/Node2D).

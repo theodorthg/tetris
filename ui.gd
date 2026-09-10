@@ -653,27 +653,27 @@ func _settings_screen() -> void:
 
 
 func _controls_screen() -> void:
-	_title("Controls", 30)
+	_title("Controls", 28)
 	_label("Tap a key to rebind it. Esc cancels.", 13)
-	_gap(4)
+	_gap(2)
 	for entry in KEY_ACTIONS:
 		var action: String = entry[0]
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
-		row.custom_minimum_size = Vector2(0, 38)
+		row.custom_minimum_size = Vector2(0, 30)
 		_box.add_child(row)
 
 		var name_lbl := Label.new()
 		name_lbl.text = entry[1]
-		name_lbl.add_theme_font_size_override("font_size", 16)
+		name_lbl.add_theme_font_size_override("font_size", 15)
 		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		row.add_child(name_lbl)
 
 		var key_btn := Button.new()
-		key_btn.custom_minimum_size = Vector2(140, 34)
+		key_btn.custom_minimum_size = Vector2(136, 28)
 		key_btn.focus_mode = Control.FOCUS_NONE
-		key_btn.add_theme_font_size_override("font_size", 16)
+		key_btn.add_theme_font_size_override("font_size", 15)
 		if _capturing == action:
 			key_btn.text = "press a key…"
 			key_btn.add_theme_color_override("font_color", Color("f0c02a"))

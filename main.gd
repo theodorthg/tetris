@@ -356,7 +356,7 @@ const TSPIN_SCORE := [400, 800, 1200, 1600]   ## T-spin: 0, 1, 2, 3 lines
 func _on_lines_cleared(rows: int, tspin: bool) -> void:
 	if tspin:
 		_add_score(TSPIN_SCORE[clampi(rows, 0, 3)] * _level)
-		_flash(("T-SPIN", "T-SPIN SINGLE", "T-SPIN DOUBLE", "T-SPIN TRIPLE")[clampi(rows, 0, 3)])
+		_flash(["T-SPIN", "T-SPIN SINGLE", "T-SPIN DOUBLE", "T-SPIN TRIPLE"][clampi(rows, 0, 3)])
 		_sfx("lines")
 	else:
 		_add_score(LINE_SCORE[clampi(rows, 0, 4)] * _level)

@@ -78,31 +78,30 @@ Vollbild-Blättern in `ui.gd` (`show_help` / `_build_help_overlay` / `_help_go`)
 - Fertig: `mouse`, `aim-mouse`. Offen: `hud`, `keyboard`, `goal`, `swipe`,
   `aim-touch`. Text durchgängig Englisch.
 
-## Sounds (`assets/sounds/`, alle vorhanden)
+## Sounds (fertig — `sound_manager.gd`, Autoload `Snd`)
 
-`SoundManager`-Autoload wie pacman (`sound_manager.gd`): `SOUNDS`-Map
-`key -> [Anzeigename, Default-%]`, `_BASE_DB`-Kalibrierung je Sound (100 % klingt
-ausgewogen), Vorhör bei Reglerwechsel, Persistenz `user://settings.cfg`
-Abschnitt `sound`, `_CALIB_VERSION`.
+Autoload in `project.godot [autoload]`. Ein `AudioStreamPlayer` je Clip + Musik-
+Loop. `SOUNDS`-Map mit `base_db` je Key (Kalibrierung, Klick am leisesten −7 dB),
+Lautstärken 0–100 in `user://settings.cfg [sound]` + `calib_version`.
+**Zugriff aus `class_name`-Skripten über `get_node_or_null("/root/Snd")` +
+`preload("res://sound_manager.gd")` für Konstanten** — der blanke `Snd`-Bezeichner
+löst unter `--script` nicht auf (bricht `_selftest.gd`).
 
-| Datei | Event | Hinweis |
-|---|---|---|
-| `tetris-theme.ogg` | Hintergrund-Loop | an/aus über **allgemeine** Settings (nicht Sound-Settings — die regeln nur Lautstärke) |
-| `click-sound.ogg` | jede Horizontalbewegung: Maus links/rechts, jede Rasterposition beim Swipen, jeder Tap / Mausklick | **leisester** Sound |
-| `drop-sound.ogg` | Hard-Drop bzw. wenn ein Stein gesetzt/gelockt wurde | |
-| `hold-sound.ogg` | Hold | |
-| `one-line-cleared.ogg` | genau 1 Zeile gecleared | |
-| `line-cleared.ogg` | 2+ Zeilen gecleared | |
-| `game-over-sound.ogg` | Game Over | |
+| Key / Datei | Event |
+|---|---|
+| `music` / `tetris-theme.ogg` | Loop, an/aus über **allgemeine** Settings (`game/music`), läuft dann durchgehend |
+| `move` / `click-sound.ogg` | jede Bewegung/Drehung/Tap/Wheel/Swipe-Rasterschritt/Mausklick (DAS-Repeat auf 50 ms gedrosselt) — leisester |
+| `drop` / `drop-sound.ogg` | `piece_locked` (Hard-Drop **und** normales Lock) |
+| `hold` / `hold-sound.ogg` | `hold_changed` |
+| `line1` / `one-line-cleared.ogg` | genau 1 Zeile |
+| `lines` / `line-cleared.ogg` | 2+ Zeilen |
+| `over` / `game-over-sound.ogg` | `topped_out` |
 
-Sound-Settings-Unterseite: pro Sound ein 0–100-%-Regler. Allgemeine Settings:
-Schalter „Music" (Theme-Loop an/aus).
+Sound-Settings-Unterseite: pro Sound ein 0–100-Regler, Loslassen = Vorhören.
 
 ## Offen / später
 
 - Einstellungen: Tastenbelegung im Spiel anpassbar machen.
-- Restliche Hilfe-Bilder: `hud`, `keyboard`, `goal`, `swipe`, `aim-touch`
-  (dann `aim` wieder maus-spezifisch).
 - Politur: Line-Clear-Animation, T-Spin/Combo, Level-Up-Feedback.
 - Politur: Line-Clear-Animation, T-Spin/Combo-Scoring, Level-Up-Feedback.
 

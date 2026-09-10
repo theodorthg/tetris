@@ -66,15 +66,23 @@
     </g>
 
     <!-- curved arrow: falling piece -> ghost -->
-    <path d="M700 225 C 880 250, 900 430, 800 520" fill="none" stroke="#f0c02a" stroke-width="6" marker-end="url(#arrow)"/>
+    <path d="M704 244 C 900 268, 906 452, 786 540" fill="none" stroke="#f0c02a" stroke-width="6" marker-end="url(#arrow)"/>
+    <!-- auto-rotate glyph on the arc -->
+    <g transform="translate(902 372)">
+      <path d="M0 -20 A 20 20 0 1 1 -18 10" fill="none" stroke="#f0c02a" stroke-width="5"/>
+      <path d="M-18 10 l -10 -6 l 12 -6 z" fill="#f0c02a"/>
+    </g>
   </g>
+  <text x="946" y="372" font-size="23" font-weight="700" fill="#f0c02a">rotates</text>
+  <text x="946" y="400" font-size="23" font-weight="700" fill="#f0c02a">to fit</text>
 
-  <!-- cursor pointing at the target column -->
-  <g transform="translate(838 430)">
+  <!-- mouse pointer, aiming at the 2nd-from-bottom cell of the target column -->
+  <g transform="translate(760 648) scale(2.1)">
     <path d="M0 0 L0 34 L9 26 L15 40 L21 37 L15 23 L27 23 Z" fill="#ffffff" stroke="#0b0e15" stroke-width="2"/>
   </g>
-  <text x="900" y="430" font-size="24" fill="#9fb0cc">your pointer</text>
-  <text x="900" y="460" font-size="24" fill="#9fb0cc">(or finger)</text>
+  <path d="M900 682 L 828 682" stroke="#5c6b86" stroke-width="2"/>
+  <text x="912" y="676" font-size="26" font-weight="700" fill="#eef2fa">mouse-pointer</text>
+  <text x="912" y="706" font-size="22" fill="#9fb0cc">you move it</text>
 
   <!-- captions -->
   <text x="640" y="836" text-anchor="middle" font-size="30" font-weight="700" fill="#eef2fa">You choose the column.</text>

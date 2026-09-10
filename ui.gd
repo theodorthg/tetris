@@ -24,17 +24,17 @@ const SPLASH_TIME := 2.6
 ## the touch set on a touchscreen. Missing images fall back to a text placeholder.
 const HELP_DIR := "res://assets/graphics/help/"
 const HELP_MOUSE := [
-	{"file": "m1-aim.png",      "title": "Aim & auto-rotate"},
-	{"file": "m2-mouse.png",    "title": "Mouse controls"},
-	{"file": "s-hud.png",       "title": "HUD buttons"},
-	{"file": "m4-keyboard.png", "title": "Keyboard"},
-	{"file": "s-goal.png",      "title": "Goal"},
+	{"file": "mouse.png",     "title": "Mouse controls"},
+	{"file": "aim-mouse.png", "title": "Aim & auto-rotate"},
+	{"file": "hud.png",       "title": "HUD buttons"},
+	{"file": "keyboard.png",  "title": "Keyboard"},
+	{"file": "goal.png",      "title": "Goal"},
 ]
 const HELP_TOUCH := [
-	{"file": "t1-aim.png",   "title": "Aim & auto-rotate"},
-	{"file": "t2-swipe.png", "title": "Swipe & tap"},
-	{"file": "s-hud.png",    "title": "HUD buttons"},
-	{"file": "s-goal.png",   "title": "Goal"},
+	{"file": "swipe.png",     "title": "Swipe & tap"},
+	{"file": "aim-touch.png", "title": "Aim & auto-rotate"},
+	{"file": "hud.png",       "title": "HUD buttons"},
+	{"file": "goal.png",      "title": "Goal"},
 ]
 const HELP_SWIPE_MIN := 60.0
 

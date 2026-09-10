@@ -43,7 +43,8 @@ Aufrufen:
   `get_viewport_rect()`, `content_scale_aspect = EXPAND`, neu bei `size_changed`.
   HUD-Band oben: Score/Level/Lines mittig, Hold-Button+Box links, Pause-Button+
   Next-Box rechts, jeweils ~35 px außerhalb der Brettkante.
-- **Steuerung**: Tastatur (Pfeile/WASD, X/Z drehen, Space Hard-Drop, C/End
+- **Steuerung**: Tastatur (Pfeile/WASD, X + die Taste links davon zum Drehen —
+  auf QWERTZ „Y", `physical_keycode`, Space Hard-Drop, C/End
   Hold, Esc/P Pause) · Gamepad · **Maus**: Cursor-Spalte = Ziel, das Spiel
   fittet Drehung+Landung dorthin (BFS + Heuristik, tuckt unter Überhänge),
   Ghost zeigt es; Mausrad = Drehung erzwingen, Linksklick Hard-Drop,

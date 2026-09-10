@@ -34,9 +34,9 @@
       <text x="470" y="47" font-size="30" font-weight="700" fill="#eef2fa">Rotate clockwise</text>
     </g>
 
-    <!-- ROTATE CCW -->
+    <!-- ROTATE CCW  (physical key left of X — labelled Y on a German QWERTZ board) -->
     <g transform="translate(150 400)">
-      <rect x="0" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="35" y="47" text-anchor="middle" font-size="30" fill="#e8eefc">Z</text>
+      <rect x="0" y="0" width="70" height="70" rx="10" fill="url(#key)" stroke="#5a6a86" stroke-width="2"/><text x="35" y="47" text-anchor="middle" font-size="30" fill="#e8eefc">Y</text>
       <text x="470" y="47" font-size="30" font-weight="700" fill="#eef2fa">Rotate counter-clockwise</text>
     </g>
 

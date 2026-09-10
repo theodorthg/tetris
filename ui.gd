@@ -51,7 +51,7 @@ const HELP_SWIPE_MIN := 60.0
 var settings := {
 	"start_level": 1,
 	"ghost": true,
-	"music": false,
+	"music": true,
 }
 
 var _screen: int = Screen.NONE
@@ -760,7 +760,7 @@ func _load_settings() -> void:
 	if cf.load(SETTINGS_PATH) == OK:
 		settings.start_level = clampi(int(cf.get_value("game", "start_level", 1)), 1, 15)
 		settings.ghost = bool(cf.get_value("game", "ghost", true))
-		settings.music = bool(cf.get_value("game", "music", false))
+		settings.music = bool(cf.get_value("game", "music", true))
 
 
 func _save_settings() -> void:

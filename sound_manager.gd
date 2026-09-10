@@ -110,7 +110,7 @@ func _load() -> void:
 			_vol[key] = clampi(int(cf.get_value("sound", key, d)), 0, 100)
 		else:
 			_vol[key] = d
-	_music_on = bool(cf.get_value("game", "music", false))
+	_music_on = bool(cf.get_value("game", "music", true))
 	_apply_music()
 
 

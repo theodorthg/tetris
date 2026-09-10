@@ -16,7 +16,7 @@
   <!-- header -->
   <text x="640" y="112" text-anchor="middle" font-size="66" font-weight="700" fill="#eef2fa" letter-spacing="6">MOUSE</text>
   <rect x="566" y="132" width="148" height="4" rx="2" fill="#f0c02a"/>
-  <text x="640" y="176" text-anchor="middle" font-size="36" fill="#9fb0cc">Move to aim, click to drop — the game fits the piece</text>
+  <text x="640" y="178" text-anchor="middle" font-size="40" fill="#9fb0cc">Move to aim, click to drop — the game fits the piece</text>
 
   <!-- ===== mouse illustration (centred ~x=640) ===== -->
   <g>
@@ -48,8 +48,8 @@
     <path d="M410 806 l 34 -18 l 0 36 Z"/>
     <path d="M870 806 l -34 -18 l 0 36 Z"/>
   </g>
-  <text x="640" y="866" text-anchor="middle" font-size="35" font-weight="700" fill="#eef2fa">MOVE  =  AIM</text>
-  <text x="640" y="902" text-anchor="middle" font-size="33" fill="#9fb0cc">the ghost snaps to the best rotation &amp; landing</text>
+  <text x="640" y="866" text-anchor="middle" font-size="38" font-weight="700" fill="#eef2fa" letter-spacing="2">MOVE  =  AIM</text>
+  <text x="640" y="906" text-anchor="middle" font-size="40" fill="#9fb0cc">the ghost snaps to the best rotation &amp; landing</text>
 
   <!-- ===== call-outs ===== -->
   <!-- left-click -->
@@ -57,31 +57,31 @@
     <path d="M300 360 L 470 400"/>
   </g>
   <circle cx="470" cy="400" r="5" fill="#5c6b86"/>
-  <text x="120" y="352" font-size="34" font-weight="700" fill="#eef2fa">Left-click</text>
-  <text x="120" y="388" font-size="34" fill="#9fb0cc">Hard drop</text>
+  <text x="120" y="350" font-size="42" font-weight="700" fill="#eef2fa">Left-click</text>
+  <text x="120" y="396" font-size="40" fill="#9fb0cc">Hard drop</text>
 
   <!-- right-click -->
   <g stroke="#5c6b86" stroke-width="2" fill="none">
     <path d="M980 360 L 810 400"/>
   </g>
   <circle cx="810" cy="400" r="5" fill="#5c6b86"/>
-  <text x="1160" y="352" text-anchor="end" font-size="34" font-weight="700" fill="#eef2fa">Right-click</text>
-  <text x="1160" y="388" text-anchor="end" font-size="34" fill="#9fb0cc">Hold piece</text>
+  <text x="1160" y="350" text-anchor="end" font-size="42" font-weight="700" fill="#eef2fa">Right-click</text>
+  <text x="1160" y="396" text-anchor="end" font-size="40" fill="#9fb0cc">Hold piece</text>
 
   <!-- scroll wheel -->
   <g stroke="#5c6b86" stroke-width="2" fill="none">
     <path d="M980 560 C 850 560, 760 470, 654 396"/>
   </g>
   <circle cx="654" cy="396" r="5" fill="#5c6b86"/>
-  <text x="1160" y="552" text-anchor="end" font-size="34" font-weight="700" fill="#eef2fa">Scroll wheel</text>
-  <text x="1160" y="588" text-anchor="end" font-size="34" fill="#9fb0cc">Rotate the piece</text>
-  <text x="1160" y="618" text-anchor="end" font-size="30" fill="#8fa0bc">(in menus: page through)</text>
+  <text x="1160" y="550" text-anchor="end" font-size="42" font-weight="700" fill="#eef2fa">Scroll wheel</text>
+  <text x="1160" y="596" text-anchor="end" font-size="40" fill="#9fb0cc">Rotate the piece</text>
+  <text x="1160" y="634" text-anchor="end" font-size="36" fill="#8fa0bc">(in menus: page through)</text>
 
   <!-- move (left side, lower) -->
   <g stroke="#5c6b86" stroke-width="2" fill="none">
     <path d="M300 560 L 486 560"/>
   </g>
   <circle cx="486" cy="560" r="5" fill="#5c6b86"/>
-  <text x="120" y="556" font-size="34" font-weight="700" fill="#eef2fa">Move L / R</text>
-  <text x="120" y="592" font-size="34" fill="#9fb0cc">Slide the piece across</text>
+  <text x="120" y="554" font-size="42" font-weight="700" fill="#eef2fa">Move L / R</text>
+  <text x="120" y="600" font-size="40" fill="#9fb0cc">Slide the piece across</text>
 </svg>

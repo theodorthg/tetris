@@ -51,8 +51,8 @@
     <path d="M0 -18 A 18 18 0 1 1 -16 9" fill="none" stroke="#f0c02a" stroke-width="5"/>
     <path d="M-16 9 l -9 -5 l 11 -6 z" fill="#f0c02a"/>
   </g>
-  <text x="758" y="364" font-size="28" font-weight="700" fill="#f0c02a">rotates</text>
-  <text x="758" y="396" font-size="28" font-weight="700" fill="#f0c02a">to fit</text>
+  <text x="758" y="364" font-size="30" font-weight="700" fill="#f0c02a">rotates</text>
+  <text x="758" y="398" font-size="30" font-weight="700" fill="#f0c02a">to fit</text>
 
   <!-- touch ripple on the target column -->
   <g>
@@ -61,11 +61,11 @@
     <circle cx="620" cy="628" r="9" fill="#e8eefc"/>
   </g>
   <path d="M694 628 L 662 628" stroke="#5c6b86" stroke-width="2"/>
-  <text x="706" y="620" font-size="30" font-weight="700" fill="#eef2fa">your finger</text>
-  <text x="706" y="652" font-size="31" fill="#9fb0cc">swipe to move it</text>
+  <text x="700" y="620" font-size="33" font-weight="700" fill="#eef2fa">your finger</text>
+  <text x="700" y="656" font-size="33" fill="#9fb0cc">swipe to move</text>
 
   <!-- captions -->
   <text x="480" y="892" text-anchor="middle" font-size="40" font-weight="700" fill="#eef2fa">You pick the column.</text>
   <text x="480" y="946" text-anchor="middle" font-size="40" font-weight="700" fill="#f0c02a">The game rotates &amp; places it.</text>
-  <text x="480" y="1004" text-anchor="middle" font-size="33" fill="#9fb0cc">double-tap for a different rotation</text>
+  <text x="480" y="1006" text-anchor="middle" font-size="35" fill="#9fb0cc">double-tap for a different rotation</text>
 </svg>

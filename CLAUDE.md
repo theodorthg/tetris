@@ -12,7 +12,11 @@ Ergänzt die übergeordnete `CLAUDE.md` unter
 - `main.gd` — Score/Level/Lines/Fall-Speed, State-Machine, Input-Routing, HUD.
 - `ui.gd` — alle Menü-Screens (CanvasLayer, im Code): Start / Pause /
   Settings (+ Sound-Unterseite) / How to Play / Game Over + Hall of Fame.
-- `_selftest.gd` — Headless-Checks: `godot --headless --path . --script res://_selftest.gd`
+- `_selftest.gd` — Headless-Checks: `godot --headless --path . --script res://_selftest.gd`.
+  **Achtung:** fängt nur Parse-Fehler in `playfield.gd`/`pieces.gd` (harte
+  Abhängigkeiten). `main.gd`/`ui.gd` zusätzlich prüfen mit
+  `timeout 10 godot --headless 2>&1 | grep -iE "parse error|script error"`
+  (bootet die echte Main-Scene).
 - `assets/help_src/` — SVG-Quellen der Hilfe-Bilder + `render.sh` (Inkscape → PNG).
   `.gdignore` drin, damit Godot die SVGs nicht importiert. Gerenderte PNGs liegen
   in `assets/graphics/help/`.
@@ -110,12 +114,32 @@ löst unter `--script` nicht auf (bricht `_selftest.gd`).
 
 Sound-Settings-Unterseite: pro Sound ein 0–100-Regler, Loslassen = Vorhören.
 
+## Controls / Tastenbelegung (fertig)
+
+Settings → **Controls** (`ui.gd::_controls_screen`): 8 Aktionen, „tap a key"
+fängt den nächsten Tastendruck (`_capturing`), Esc bricht ab. Layout-bewusste
+Beschriftung via `DisplayServer.keyboard_get_label_from_physical`. Persistenz
+`user://settings.cfg [keys]` als `physical_keycode`, angewandt in `_ready` über
+`_apply_keys` → `InputMap`. „Reset to defaults" = `InputMap.load_from_project_settings()`.
+Gamepad-Bindings bleiben unberührt.
+
+## Line-Clear + T-Spin (fertig)
+
+- **Line-Clear-Flash:** `playfield._lock_piece` friert bei vollen Reihen ein
+  (`_clearing`), `_process` zeigt `CLEAR_TIME` (0.26 s) einen weißen Wash +
+  Squash, dann `_collapse_cleared` → Reihen fallen. Sync-Version für den Test:
+  `clear_full_rows()`.
+- **T-Spin:** `_last_rot` (war der letzte Move eine Drehung?) + `_tspin_corners()`
+  ≥ 3 blockierte Diagonalen. Signal `lines_cleared(rows, tspin)`. Scoring in
+  `main`: `TSPIN_SCORE` 400/800/1200/1600 ×Level; auch T-Spin ohne Reihe zählt.
+- **Flash-Text** (`main._flash`): „T-SPIN …" bzw. „LEVEL n" kurz übers Brett,
+  `ThemeDB.fallback_font`.
+
 ## Offen / später
 
-- Einstellungen: Tastenbelegung im Spiel anpassbar machen.
 - Eigene Sounds für 4 Reihen (Tetris) und 2 Reihen (Doppel) — hat der Nutzer
   noch nicht; Code routet aktuell 1 → `line1`, 2+ → `lines`.
-- Politur: Line-Clear-Animation, T-Spin/Combo-Scoring, Level-Up-Feedback.
+- Politur: Combo-Scoring.
 
 ## Aseprite MCP Pro
 

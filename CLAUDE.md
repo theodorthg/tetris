@@ -13,6 +13,25 @@ Ergänzt die übergeordnete `CLAUDE.md` unter
 - `ui.gd` — alle Menü-Screens (CanvasLayer, im Code): Start / Pause /
   Settings (+ Sound-Unterseite) / How to Play / Game Over + Hall of Fame.
 - `_selftest.gd` — Headless-Checks: `godot --headless --path . --script res://_selftest.gd`
+- `assets/help_src/` — SVG-Quellen der Hilfe-Bilder + `render.sh` (Inkscape → PNG).
+  `.gdignore` drin, damit Godot die SVGs nicht importiert. Gerenderte PNGs liegen
+  in `assets/graphics/help/`.
+
+## Bauen & Testen (Editor bleibt zu)
+
+Godot-Editor **nicht** öffnen. Alle drei lokalen Builds per Skript:
+
+```
+bash projects/tetris/build.sh            # Linux + Web + Android (+ adb install)
+bash projects/tetris/build.sh web        # einzeln: linux | web | android
+```
+
+Aufrufen:
+- **Linux:** `/home/bernd/GodotDev/learn_2d_gamedev_godot_4_0.57.0_linux/projects/tetris-linux.x86_64`
+- **Web:** `cd projects/web-release-tetris && python3 -m http.server 8099` → `http://localhost:8099/`
+- **Android:** von `build.sh` direkt installiert; sonst
+  `~/Android/Sdk/platform-tools/adb install -r projects/tetris-android.apk`
+- **Windows:** nur CI, manuell — `gh workflow run windows-export.yml` (bei Release).
 
 ## Design-Entscheidungen
 
@@ -45,13 +64,25 @@ Ergänzt die übergeordnete `CLAUDE.md` unter
 - On-screen **PAUSE** (links oben) und **HOLD** (rechts oben) im festen Band,
   ausgeblendet bei offenem Menü / Game Over.
 
+## Hilfe-Screen (bildbasiert)
+
+Vollbild-Blättern in `ui.gd` (`show_help` / `_build_help_overlay` / `_help_go`):
+- Untere Leiste `‹  Done  ›` + Seitenpunkte; Weiter/zurück per Pfeiltasten, A/D,
+  Mausrad, den Pfeil-Buttons, Touch-Swipe. `Esc`/`Space`/`Done` → zurück ins
+  aufrufende Menü (Start **oder** Pause). Umlauf an.
+- Zwei Seitensätze, `main.set_help_context()` schaltet um:
+  - **Maus:** `mouse` · `aim-mouse` · `hud` · `keyboard` · `goal`
+  - **Touch:** `swipe` · `aim-touch` · `hud` · `goal`
+- Bilder: `assets/graphics/help/<name>.png` (aus `assets/help_src/<name>.svg`,
+  `render.sh`). Fehlt eine PNG → Text-Platzhalter, Seiten kommen einzeln.
+- Fertig: `mouse`, `aim-mouse`. Offen: `hud`, `keyboard`, `goal`, `swipe`,
+  `aim-touch`. Text durchgängig Englisch.
+
 ## Offen / später
 
 - Sounds + Sound-Settings-Unterseite mit Pro-Sound-Lautstärke.
-- **Hilfe-Screen bildbasiert** (einzelne Illustrationen, per Pfeiltasten /
-  Buttons / Mausrad nach links/rechts scrollbar — wie die Steuerungs-Diagramme
-  auf play.tetris.com); erst wenn Bedienung + Logik final sind. Aktuell
-  Platzhaltertext in `ui.gd::_help_text`.
+- Einstellungen: Tastenbelegung im Spiel anpassbar machen.
+- Restliche Hilfe-Bilder (siehe oben).
 - Politur: Line-Clear-Animation, T-Spin/Combo-Scoring, Level-Up-Feedback.
 
 ## Aseprite MCP Pro

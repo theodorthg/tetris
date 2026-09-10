@@ -68,6 +68,18 @@ var _last_tap_pos := Vector2.ZERO
 var _pending_drop := false
 var _pending_drop_t := 0.0
 
+var _last_aim_col := -99      ## last integer column the mouse aimed at (for the click sound)
+var _move_snd_t := 0.0        ## throttle for the per-move click during key-repeat
+
+@onready var _snd: Node = get_node_or_null(^"/root/Snd")
+
+
+## Play a sound through the "Snd" autoload (looked up by path so this script
+## still compiles when the project is run under --script, e.g. _selftest.gd).
+func _sfx(key: String) -> void:
+	if _snd:
+		_snd.play(key)
+
 
 func _ready() -> void:
 	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
@@ -178,6 +190,8 @@ func _build() -> void:
 	_field.topped_out.connect(_on_top_out)
 	_field.next_changed.connect(func(_q): queue_redraw())
 	_field.hold_changed.connect(func(_t): queue_redraw())
+	_field.hold_changed.connect(func(_t): _sfx("hold"))
+	_field.piece_locked.connect(func(): _sfx("drop"))
 	_field.piece_spawned.connect(_on_piece_spawned)
 
 	_score_label = _mk_label(27)
@@ -286,6 +300,7 @@ func _on_top_out() -> void:
 	_field.clear_suggestion()
 	_pending_drop = false
 	_hud_buttons(false)
+	_sfx("over")
 	_ui.show_game_over({"score": _score, "lines": _lines, "level": _level})
 	queue_redraw()
 
@@ -332,6 +347,7 @@ func _on_settings_changed(cfg: Dictionary) -> void:
 # --- scoring -----------------------------------------------------------
 
 func _on_lines_cleared(rows: int) -> void:
+	_sfx("line1" if rows <= 1 else "lines")
 	_add_score(LINE_SCORE[clampi(rows, 0, 4)] * _level)
 	_lines += rows
 	var new_level: int = _start_level + int(_lines / 10.0)
@@ -380,10 +396,12 @@ func _unhandled_input(e: InputEvent) -> void:
 
 	if e.is_action_pressed("rotate_cw"):
 		_use_keyboard()
-		_field.rotate_piece(1)
+		if _field.rotate_piece(1):
+			_sfx("move")
 	elif e.is_action_pressed("rotate_ccw"):
 		_use_keyboard()
-		_field.rotate_piece(-1)
+		if _field.rotate_piece(-1):
+			_sfx("move")
 	elif e.is_action_pressed("hard_drop"):
 		_field.hard_drop()
 	elif e.is_action_pressed("hold_piece"):
@@ -391,17 +409,21 @@ func _unhandled_input(e: InputEvent) -> void:
 	elif e is InputEventMouseButton and e.pressed and not _touch_mode:
 		match e.button_index:
 			MOUSE_BUTTON_LEFT:
+				_sfx("move")
 				_field.hard_drop()
 			MOUSE_BUTTON_RIGHT:
+				_sfx("move")
 				_field.hold()
 			MOUSE_BUTTON_WHEEL_UP:
 				_mouse_active = true
 				_field.cycle_rot_lock(1)
 				_mouse_update(_last_mouse_pos)
+				_sfx("move")
 			MOUSE_BUTTON_WHEEL_DOWN:
 				_mouse_active = true
 				_field.cycle_rot_lock(-1)
 				_mouse_update(_last_mouse_pos)
+				_sfx("move")
 	elif e is InputEventMouseMotion and _mouse_control and not _touch_mode:
 		_mouse_active = true
 		_last_mouse_pos = e.position
@@ -425,6 +447,7 @@ func _swipe_px() -> float:
 
 
 func _on_piece_spawned() -> void:
+	_last_aim_col = -99
 	if _touch_mode:
 		_touch_col = clampi(_field.piece_left_col() + int(_field.piece_width() / 2.0), 0, Playfield.COLS - 1)
 		_touch_refresh_suggest()
@@ -471,12 +494,14 @@ func _handle_touch(e: InputEvent) -> void:
 			if new_col != _touch_col:
 				_touch_col = new_col
 				_touch_refresh_suggest()
+				_sfx("move")
 			_touch_soft_drop = false
 		elif _touch_axis == 2:
 			_touch_soft_drop = d.y > 14.0
 
 
 func _register_tap(pos: Vector2) -> void:
+	_sfx("move")
 	var now := Time.get_ticks_msec() / 1000.0
 	var is_double := (now - _last_tap_time) < DOUBLE_TAP_TIME \
 		and pos.distance_to(_last_tap_pos) < DOUBLE_TAP_DIST
@@ -503,6 +528,10 @@ func _mouse_update(screen_pos: Vector2) -> void:
 	if _field.piece_left_col() < 0:
 		return
 	var col := (screen_pos.x - _field.position.x) / float(_field.cell) - 0.5
+	var ci := int(roundf(col))
+	if ci != _last_aim_col:
+		_last_aim_col = ci
+		_sfx("move")
 	_field.aim(col)
 
 
@@ -534,11 +563,14 @@ func _process(dt: float) -> void:
 		return
 
 	_use_keyboard()
+	_move_snd_t += dt
 	if dir != _das_dir:
 		_das_dir = dir
 		_das_time = 0.0
 		_arr_time = 0.0
-		_field.move(dir)
+		if _field.move(dir):
+			_sfx("move")
+			_move_snd_t = 0.0
 		return
 	_das_time += dt
 	if _das_time >= DAS:
@@ -547,6 +579,9 @@ func _process(dt: float) -> void:
 			_arr_time -= ARR
 			if not _field.move(dir):
 				break
+			if _move_snd_t >= 0.05:
+				_sfx("move")
+				_move_snd_t = 0.0
 
 
 # --- HUD previews -----------------------------------------------------

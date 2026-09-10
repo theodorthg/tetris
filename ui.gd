@@ -16,6 +16,14 @@ const SETTINGS_PATH := "user://settings.cfg"
 const HOF_PATH := "user://hall_of_fame.cfg"
 const HOF_MAX := 10
 
+## the "Snd" autoload — via preload for its consts, via /root for its methods
+## (autoload identifiers aren't visible when the project runs under --script)
+const SoundManager := preload("res://sound_manager.gd")
+
+
+func _snd() -> Node:
+	return get_node_or_null(^"/root/Snd")
+
 enum Screen { NONE, SPLASH, START, PAUSE, SETTINGS, SOUND, HELP, GAMEOVER }
 
 const SPLASH_TIME := 2.6
@@ -43,6 +51,7 @@ const HELP_SWIPE_MIN := 60.0
 var settings := {
 	"start_level": 1,
 	"ghost": true,
+	"music": false,
 }
 
 var _screen: int = Screen.NONE
@@ -585,6 +594,18 @@ func _settings_screen() -> void:
 		settings.ghost = on
 		_apply_settings())
 
+	# Background music on/off (volume lives on the Sound page)
+	var music_row := _row("Music")
+	var music := CheckButton.new()
+	music.button_pressed = bool(settings.music)
+	music_row.add_child(music)
+	music.toggled.connect(func(on):
+		settings.music = on
+		var s := _snd()
+		if s:
+			s.set_music_enabled(on)
+		_apply_settings())
+
 	_gap(10)
 	_button("Sound", func():
 		_screen = Screen.SOUND
@@ -594,12 +615,56 @@ func _settings_screen() -> void:
 
 func _sound_screen() -> void:
 	_title("Sound", 30)
-	_gap(4)
-	_label("No sounds yet — this screen will get a master volume and a\nper-sound slider once the game has audio.", 14)
-	_gap(12)
+	_gap(2)
+	_label("Volume of each sound (0 turns it off).", 13)
+	_gap(6)
+	for key in SoundManager.SFX_ORDER:
+		_sound_row(str(key), str(SoundManager.SOUNDS[key]["name"]))
+	_gap(10)
 	_button("Back", func():
 		_screen = Screen.SETTINGS
 		_build())
+
+
+func _sound_row(key: String, caption: String) -> void:
+	var snd := _snd()
+	var cur: int = snd.get_volume(key) if snd else int(SoundManager.SOUNDS[key]["def"])
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 10)
+	h.custom_minimum_size = Vector2(0, 40)
+	_box.add_child(h)
+
+	var name_lbl := Label.new()
+	name_lbl.text = caption
+	name_lbl.add_theme_font_size_override("font_size", 15)
+	name_lbl.custom_minimum_size = Vector2(132, 0)
+	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	h.add_child(name_lbl)
+
+	var sl := HSlider.new()
+	sl.min_value = 0
+	sl.max_value = 100
+	sl.step = 5
+	sl.value = cur
+	sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(sl)
+
+	var val_lbl := Label.new()
+	val_lbl.text = "%d" % cur
+	val_lbl.add_theme_font_size_override("font_size", 14)
+	val_lbl.custom_minimum_size = Vector2(34, 0)
+	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	val_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	h.add_child(val_lbl)
+
+	sl.value_changed.connect(func(v):
+		val_lbl.text = "%d" % int(v)
+		if snd:
+			snd.set_volume(key, int(v)))
+	sl.drag_ended.connect(func(_changed):
+		if snd and key != "music":
+			snd.play(key))
 
 
 # --- small widget helpers -------------------------------------------
@@ -695,6 +760,7 @@ func _load_settings() -> void:
 	if cf.load(SETTINGS_PATH) == OK:
 		settings.start_level = clampi(int(cf.get_value("game", "start_level", 1)), 1, 15)
 		settings.ghost = bool(cf.get_value("game", "ghost", true))
+		settings.music = bool(cf.get_value("game", "music", false))
 
 
 func _save_settings() -> void:
@@ -702,6 +768,7 @@ func _save_settings() -> void:
 	cf.load(SETTINGS_PATH)   # keep any [sound] section
 	cf.set_value("game", "start_level", int(settings.start_level))
 	cf.set_value("game", "ghost", bool(settings.ghost))
+	cf.set_value("game", "music", bool(settings.music))
 	cf.save(SETTINGS_PATH)
 
 

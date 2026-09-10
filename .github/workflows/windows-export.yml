@@ -1,7 +1,13 @@
 name: Windows Export
 
 on:
-  workflow_dispatch:   # nur manuell per Klick in GitHub starten
+  workflow_dispatch:        # manuell per Klick in GitHub
+  push:
+    tags:
+      - "v*"                # v1.0, v1.2.3 … -> Build + GitHub Release
+
+permissions:
+  contents: write           # für das Anlegen des Releases
 
 jobs:
   export-windows:
@@ -42,3 +48,16 @@ jobs:
         with:
           name: tetris-windows
           path: build/
+
+      - name: Zip fürs Release schnüren
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd build
+          zip -r ../tetris-windows-${GITHUB_REF_NAME}.zip .
+
+      - name: GitHub Release anlegen / aktualisieren
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: tetris-windows-${{ github.ref_name }}.zip
+          generate_release_notes: true

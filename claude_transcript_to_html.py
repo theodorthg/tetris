@@ -1,0 +1,733 @@
+#!/usr/bin/env python3
+"""
+claude_transcript_to_html.py
+============================
+
+Render a Claude Code session transcript (`*.jsonl`) as a single self-contained
+HTML page: speaker-separated, Markdown-formatted, with syntax-highlighted code
+blocks and collapsible tool calls / tool results / thinking.
+
+In-page toolbar:
+  * Expand / Collapse all tools
+  * Reading mode  - hides every tool call, tool result and thinking block (and
+                    any Claude turn that was nothing but those), leaving the
+                    plain conversation
+  * Toggle light / dark
+  * Export to PDF - opens the browser print dialog ("Save as PDF"); the left
+                    table of contents prints as a clickable index and anything
+                    hidden or collapsed on screen is left out of the PDF
+
+Transcripts live in:
+    ~/.claude/projects/<slugified-project-path>/<session-id>.jsonl
+
+Usage
+-----
+    python3 claude_transcript_to_html.py TRANSCRIPT.jsonl [-o OUTPUT.html] [options]
+
+    # newest transcript for the current project:
+    python3 claude_transcript_to_html.py --latest
+
+Options
+-------
+    -o, --output PATH     Output file (default: <transcript>.html next to input).
+    --latest             Use the most recently modified *.jsonl under
+                         ~/.claude/projects/ that matches the current directory.
+    --title TEXT         Page title (default: derived from the file name).
+    --open               Open the result in the default browser when done.
+    --max-result N       Truncate each tool result to N characters (default 20000,
+                         0 = unlimited).
+    --no-meta            Drop events flagged isMeta (Claude Code's injected notes).
+    --light              Force the light colour scheme (default follows the OS).
+
+Only the Python standard library is required. Syntax highlighting is a
+progressive enhancement via highlight.js from a CDN; offline, code blocks simply
+render as plain monospace.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import html
+import json
+import os
+import re
+import sys
+import webbrowser
+from pathlib import Path
+
+
+# --------------------------------------------------------------------------- #
+#  transcript loading
+# --------------------------------------------------------------------------- #
+
+def load_events(path: Path) -> list[dict]:
+    events: list[dict] = []
+    with path.open(encoding="utf-8", errors="replace") as fh:
+        for lineno, line in enumerate(fh, 1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                events.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                print(f"warn: skipping malformed line {lineno}: {exc}", file=sys.stderr)
+    return events
+
+
+def find_latest_transcript() -> Path | None:
+    root = Path.home() / ".claude" / "projects"
+    if not root.is_dir():
+        return None
+    cwd = Path.cwd().resolve()
+    # Claude Code slugifies the project path by replacing os.sep with '-'
+    slug = "-" + str(cwd).strip(os.sep).replace(os.sep, "-")
+    candidates = sorted(root.glob(f"*{slug.split('-')[-1]}*/*.jsonl"),
+                        key=lambda p: p.stat().st_mtime, reverse=True)
+    if not candidates:
+        candidates = sorted(root.glob("*/*.jsonl"),
+                            key=lambda p: p.stat().st_mtime, reverse=True)
+    return candidates[0] if candidates else None
+
+
+def fmt_ts(iso: str | None) -> str:
+    if not iso:
+        return ""
+    try:
+        t = dt.datetime.fromisoformat(str(iso).replace("Z", "+00:00"))
+        return t.astimezone().strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return str(iso)
+
+
+# --------------------------------------------------------------------------- #
+#  minimal Markdown -> HTML
+# --------------------------------------------------------------------------- #
+
+def _inline(text: str) -> str:
+    """Inline Markdown: code, links, bold, italic, strike, bare URLs."""
+    s = html.escape(text, quote=False)
+    stash: list[str] = []
+
+    def keep(fragment: str) -> str:
+        stash.append(fragment)
+        return f"\x00{len(stash) - 1}\x00"
+
+    s = re.sub(r"`([^`]+)`", lambda m: keep(f"<code>{m.group(1)}</code>"), s)
+    s = re.sub(
+        r"\[([^\]]+)\]\(\s*(?:&lt;)?([^)\s]+?)(?:&gt;)?\s*\)",
+        lambda m: keep(
+            f'<a href="{m.group(2)}" target="_blank" rel="noopener">{m.group(1)}</a>'
+        ),
+        s,
+    )
+    s = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", s)
+    s = re.sub(r"__([^_]+)__", r"<strong>\1</strong>", s)
+    s = re.sub(r"(?<![\w*])\*([^*\n]+)\*(?![\w*])", r"<em>\1</em>", s)
+    s = re.sub(r"~~([^~]+)~~", r"<del>\1</del>", s)
+    # <https://...> autolinks
+    s = re.sub(
+        r"&lt;(https?://[^\s&]+)&gt;",
+        lambda m: keep(
+            f'<a href="{m.group(1)}" target="_blank" rel="noopener">{m.group(1)}</a>'
+        ),
+        s,
+    )
+    # bare URLs (drop trailing sentence punctuation)
+    def _bare(m: re.Match) -> str:
+        url = m.group(0).rstrip(".,;:!?)")
+        return keep(f'<a href="{url}" target="_blank" rel="noopener">{url}</a>')
+
+    s = re.sub(r"(?<![\"\x00>])\bhttps?://[^\s<>()\x00]+", _bare, s)
+    s = re.sub(r"\x00(\d+)\x00", lambda m: stash[int(m.group(1))], s)
+    return s
+
+
+def _split_row(line: str) -> list[str]:
+    line = line.strip()
+    if line.startswith("|"):
+        line = line[1:]
+    if line.endswith("|"):
+        line = line[:-1]
+    return [c.strip() for c in line.split("|")]
+
+
+_BLOCK_START = re.compile(r"^\s*(```|#{1,6}\s|[-*+]\s|\d+[.)]\s|>)")
+
+
+def md_to_html(text: str) -> str:
+    lines = (text or "").split("\n")
+    out: list[str] = []
+    i, n = 0, len(lines)
+
+    while i < n:
+        line = lines[i]
+
+        m = re.match(r"^\s*```+\s*([\w+#.-]*)", line)
+        if m:
+            lang = (m.group(1) or "text").lower()
+            i += 1
+            buf: list[str] = []
+            while i < n and not re.match(r"^\s*```+\s*$", lines[i]):
+                buf.append(lines[i])
+                i += 1
+            i += 1
+            code = html.escape("\n".join(buf), quote=False)
+            out.append(
+                f'<pre><code class="language-{html.escape(lang)}">{code}</code></pre>'
+            )
+            continue
+
+        if not line.strip():
+            i += 1
+            continue
+
+        m = re.match(r"^(#{1,6})\s+(.*)$", line)
+        if m:
+            lvl = len(m.group(1))
+            out.append(f"<h{lvl}>{_inline(m.group(2).strip())}</h{lvl}>")
+            i += 1
+            continue
+
+        if re.match(r"^\s*([-*_])(\s*\1){2,}\s*$", line):
+            out.append("<hr>")
+            i += 1
+            continue
+
+        if (
+            "|" in line
+            and i + 1 < n
+            and "-" in lines[i + 1]
+            and re.match(r"^\s*\|?[\s:|-]+\|?\s*$", lines[i + 1])
+        ):
+            header = _split_row(line)
+            i += 2
+            rows: list[list[str]] = []
+            while i < n and "|" in lines[i] and lines[i].strip():
+                rows.append(_split_row(lines[i]))
+                i += 1
+            thead = "".join(f"<th>{_inline(c)}</th>" for c in header)
+            body = "".join(
+                "<tr>" + "".join(f"<td>{_inline(c)}</td>" for c in r) + "</tr>"
+                for r in rows
+            )
+            out.append(
+                f"<table><thead><tr>{thead}</tr></thead><tbody>{body}</tbody></table>"
+            )
+            continue
+
+        if line.lstrip().startswith(">"):
+            buf = []
+            while i < n and lines[i].lstrip().startswith(">"):
+                buf.append(re.sub(r"^\s*>\s?", "", lines[i]))
+                i += 1
+            out.append(f"<blockquote>{md_to_html(chr(10).join(buf))}</blockquote>")
+            continue
+
+        m = re.match(r"^(\s*)([-*+]|\d+[.)])\s+(.*)$", line)
+        if m:
+            ordered = bool(re.match(r"\d", m.group(2)))
+            tag = "ol" if ordered else "ul"
+            items: list[str] = []
+            while i < n:
+                mm = re.match(r"^(\s*)([-*+]|\d+[.)])\s+(.*)$", lines[i])
+                if mm:
+                    items.append(mm.group(3))
+                    i += 1
+                elif items and lines[i].strip() and lines[i].startswith((" ", "\t")):
+                    items[-1] += " " + lines[i].strip()
+                    i += 1
+                else:
+                    break
+            lis = "".join(f"<li>{_inline(it)}</li>" for it in items)
+            out.append(f"<{tag}>{lis}</{tag}>")
+            continue
+
+        buf = [line]
+        i += 1
+        while i < n and lines[i].strip() and not _BLOCK_START.match(lines[i]):
+            buf.append(lines[i])
+            i += 1
+        out.append("<p>" + "<br>".join(_inline(s.rstrip()) for s in buf) + "</p>")
+
+    return "\n".join(out)
+
+
+# --------------------------------------------------------------------------- #
+#  message rendering
+# --------------------------------------------------------------------------- #
+
+def render_image(source: dict) -> str:
+    if source.get("type") == "base64" and source.get("data"):
+        mt = source.get("media_type", "image/png")
+        return f'<img alt="embedded image" src="data:{mt};base64,{source["data"]}">'
+    return "<p><em>[image]</em></p>"
+
+
+def fold(header_html: str, body_html: str, kind: str, extra_class: str = "") -> str:
+    """A collapsible panel. Uses an explicit .open class toggled by JS rather
+    than <details>, so it can't be defeated by browser/CSS quirks. `kind` is
+    tagged as data-kind so "reading mode" can hide tool/thinking panels."""
+    cls = ("fold " + extra_class).strip()
+    return (
+        f'<div class="{cls}" data-kind="{kind}">'
+        f'<div class="fold-h" role="button" tabindex="0">{header_html}</div>'
+        f'<div class="fold-c">{body_html}</div></div>'
+    )
+
+
+def render_tool_use(blk: dict) -> str:
+    name = html.escape(str(blk.get("name", "tool")))
+    try:
+        pretty = json.dumps(blk.get("input", {}), indent=2, ensure_ascii=False)
+    except (TypeError, ValueError):
+        pretty = str(blk.get("input", ""))
+    body = html.escape(pretty, quote=False)
+    return fold(
+        f"&#128295; tool call &middot; <b>{name}</b>",
+        f'<pre><code class="language-json">{body}</code></pre>',
+        "tool_use",
+    )
+
+
+def render_tool_result(blk: dict, max_result: int) -> str:
+    content = blk.get("content", "")
+    if isinstance(content, str):
+        text = content
+    elif isinstance(content, list):
+        chunks = []
+        for x in content:
+            if isinstance(x, dict):
+                if x.get("type") == "text":
+                    chunks.append(x.get("text", ""))
+                elif x.get("type") == "image":
+                    chunks.append("[image]")
+                else:
+                    chunks.append(json.dumps(x, ensure_ascii=False))
+            else:
+                chunks.append(str(x))
+        text = "\n".join(chunks)
+    else:
+        text = str(content)
+
+    full_len = len(text)
+    if max_result and full_len > max_result:
+        text = text[:max_result] + f"\n\n… [truncated {full_len - max_result} chars]"
+
+    is_err = bool(blk.get("is_error"))
+    label = "&#9888; tool result (error)" if is_err else "&#128196; tool result"
+    return fold(
+        f'{label} <span class="muted">({full_len} chars)</span>',
+        f"<pre>{html.escape(text, quote=False)}</pre>",
+        "tool_result",
+        "err" if is_err else "",
+    )
+
+
+def render_blocks(content, max_result: int) -> list[tuple[str, str]]:
+    parts: list[tuple[str, str]] = []
+    if isinstance(content, str):
+        return [("text", md_to_html(content))]
+    for blk in content or []:
+        if not isinstance(blk, dict):
+            parts.append(("text", md_to_html(str(blk))))
+            continue
+        t = blk.get("type")
+        if t == "text":
+            parts.append(("text", md_to_html(blk.get("text", ""))))
+        elif t == "thinking":
+            parts.append(
+                ("thinking", fold("&#128173; thinking",
+                                  md_to_html(blk.get("thinking", "")), "thinking", "think"))
+            )
+        elif t == "redacted_thinking":
+            parts.append(("thinking", '<p class="muted"><em>[redacted thinking]</em></p>'))
+        elif t == "tool_use":
+            parts.append(("tool_use", render_tool_use(blk)))
+        elif t == "tool_result":
+            parts.append(("tool_result", render_tool_result(blk, max_result)))
+        elif t == "image":
+            parts.append(("image", render_image(blk.get("source", {}))))
+        else:
+            parts.append(
+                ("text", f"<pre>{html.escape(json.dumps(blk, indent=2, ensure_ascii=False))}</pre>")
+            )
+    return parts
+
+
+def first_text_snippet(content) -> str:
+    if isinstance(content, str):
+        s = content
+    else:
+        s = ""
+        for b in content or []:
+            if isinstance(b, dict) and b.get("type") == "text":
+                s = b.get("text", "")
+                break
+    s = re.sub(r"<system-reminder>.*?</system-reminder>", "", s, flags=re.S)
+    s = re.sub(r"\s+", " ", s).strip()
+    return (s[:90] + "…") if len(s) > 90 else s or "(no text)"
+
+
+# --------------------------------------------------------------------------- #
+#  page assembly
+# --------------------------------------------------------------------------- #
+
+ROLE_LABEL = {
+    "user": "You",
+    "assistant": "Claude",
+    "tool": "Tool",
+    "summary": "Context summary",
+    "system": "System",
+}
+
+
+def build_turns(events, *, drop_meta: bool, max_result: int):
+    turns = []
+    for ev in events:
+        if drop_meta and ev.get("isMeta"):
+            continue
+        et = ev.get("type")
+        ts = fmt_ts(ev.get("timestamp"))
+        side = bool(ev.get("isSidechain"))
+
+        if et == "summary":
+            turns.append(
+                dict(role="summary", ts=ts, side=False,
+                     html=md_to_html(ev.get("summary", "")), snippet=None)
+            )
+            continue
+
+        msg = ev.get("message")
+        if not isinstance(msg, dict):
+            continue
+        role = msg.get("role", et or "system")
+        content = msg.get("content")
+        blocks = render_blocks(content, max_result)
+        if not blocks:
+            continue
+
+        kinds = {k for k, _ in blocks}
+        disp = "tool" if (role == "user" and kinds and kinds <= {"tool_result", "image"}) else role
+        # an assistant turn that is only tool calls / thinking (no prose) -> can be
+        # hidden entirely in "reading mode"
+        no_prose = disp == "assistant" and not (kinds & {"text", "image"})
+
+        turns.append(
+            dict(
+                role=disp,
+                ts=ts,
+                side=side,
+                no_prose=no_prose,
+                html="\n".join(h for _, h in blocks),
+                snippet=first_text_snippet(content) if disp == "user" else None,
+            )
+        )
+    return turns
+
+
+PAGE_CSS = """
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1d212b; --text:#dfe3ea; --muted:#8b93a3;
+  --border:#2a2f3a; --user:#5fb3d4; --assistant:#7ec27e; --tool:#a2a9b8;
+  --summary:#e0b25a; --accent:#7aa2f7; --code-bg:#11141a;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme]){
+    --bg:#f6f7f9; --panel:#ffffff; --panel2:#f0f2f5; --text:#1c2230; --muted:#5b6472;
+    --border:#dfe3ea; --user:#1f7aa8; --assistant:#2f8a3f; --tool:#5c6472;
+    --summary:#a5761a; --accent:#3355cc; --code-bg:#f2f4f7;
+  }
+}
+:root[data-theme=light]{
+  --bg:#f6f7f9; --panel:#ffffff; --panel2:#f0f2f5; --text:#1c2230; --muted:#5b6472;
+  --border:#dfe3ea; --user:#1f7aa8; --assistant:#2f8a3f; --tool:#5c6472;
+  --summary:#a5761a; --accent:#3355cc; --code-bg:#f2f4f7;
+}
+:root[data-theme=dark]{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1d212b; --text:#dfe3ea; --muted:#8b93a3;
+  --border:#2a2f3a; --user:#5fb3d4; --assistant:#7ec27e; --tool:#a2a9b8;
+  --summary:#e0b25a; --accent:#7aa2f7; --code-bg:#11141a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,sans-serif}
+a{color:var(--accent)}
+.wrap{display:grid;grid-template-columns:260px minmax(0,1fr);gap:0;max-width:1180px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;
+  padding:18px 14px;border-right:1px solid var(--border);background:var(--panel)}
+nav h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+nav ol{margin:0;padding:0;list-style:none;counter-reset:q}
+nav li{counter-increment:q;margin:0 0 4px}
+nav a{display:block;padding:6px 8px;border-radius:6px;text-decoration:none;color:var(--text);
+  font-size:13px;border:1px solid transparent}
+nav a:hover{background:var(--panel2);border-color:var(--border)}
+nav a::before{content:counter(q) ". ";color:var(--muted)}
+main{padding:26px 30px 120px;min-width:0}
+header.doc{margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+header.doc h1{font-size:19px;margin:0 0 6px}
+header.doc .meta{color:var(--muted);font-size:12.5px}
+.toolbar{margin:14px 0 0;display:flex;gap:8px;flex-wrap:wrap}
+.toolbar button{background:var(--panel2);color:var(--text);border:1px solid var(--border);
+  border-radius:6px;padding:5px 10px;font-size:12.5px;cursor:pointer}
+.toolbar button:hover{border-color:var(--accent)}
+.toolbar button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.turn{margin:18px 0;padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
+.turn.user{border-left:3px solid var(--user)}
+.turn.assistant{border-left:3px solid var(--assistant)}
+.turn.tool{border-left:3px solid var(--tool);background:var(--panel2)}
+.turn.summary{border-left:3px solid var(--summary)}
+.turn .who{font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+.turn.user .who{color:var(--user)} .turn.assistant .who{color:var(--assistant)}
+.turn.tool .who{color:var(--tool)} .turn.summary .who{color:var(--summary)}
+.turn .when{color:var(--muted);font-size:11.5px;margin-left:8px;font-weight:400;text-transform:none;letter-spacing:0}
+.turn .sidechain{color:var(--accent);font-size:11px;margin-left:8px}
+.body{margin-top:8px}
+.body>*:first-child{margin-top:0}
+.body>*:last-child{margin-bottom:0}
+.body h1,.body h2,.body h3,.body h4{line-height:1.3;margin:1.1em 0 .5em}
+.body h1{font-size:1.3em} .body h2{font-size:1.18em} .body h3{font-size:1.05em}
+.body p{margin:.55em 0}
+.body ul,.body ol{margin:.5em 0;padding-left:1.5em}
+.body blockquote{margin:.6em 0;padding:.1em 0 .1em 1em;border-left:3px solid var(--border);color:var(--muted)}
+.body code{background:var(--code-bg);border:1px solid var(--border);border-radius:4px;
+  padding:.08em .35em;font-size:.9em;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.body pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;
+  padding:12px 14px;overflow:auto;margin:.7em 0}
+.body pre code{background:none;border:0;padding:0;font-size:12.5px;line-height:1.5}
+.body table{border-collapse:collapse;margin:.7em 0;display:block;overflow:auto}
+.body th,.body td{border:1px solid var(--border);padding:5px 10px;text-align:left}
+.body th{background:var(--panel2)}
+.body img{max-width:100%;border:1px solid var(--border);border-radius:6px}
+.fold{margin:.7em 0;border:1px solid var(--border);border-radius:8px;
+  background:var(--code-bg);overflow:hidden}
+.fold-h{cursor:pointer;padding:8px 12px;font-size:12.5px;color:var(--muted);
+  user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fold-h:hover{color:var(--text)}
+.fold-h:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.fold-h::before{content:"\\25B8  ";color:var(--muted)}
+.fold.open>.fold-h::before{content:"\\25BE  "}
+.fold-c{display:none;border-top:1px solid var(--border)}
+.fold.open>.fold-c{display:block}
+.fold-c>pre{margin:0;border:0;border-radius:0}
+.fold.think{background:transparent}
+.fold.think>.fold-h{color:var(--accent)}
+.fold.think>.fold-c{padding:2px 12px 10px;border-top-color:var(--border)}
+.fold.err{border-color:#a44}
+.muted{color:var(--muted)}
+#top{position:fixed;right:20px;bottom:20px;background:var(--panel2);border:1px solid var(--border);
+  color:var(--text);border-radius:20px;padding:8px 14px;text-decoration:none;font-size:12.5px}
+@media (max-width:860px){
+  .wrap{grid-template-columns:1fr}
+  nav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border)}
+  main{padding:18px 16px 100px}
+}
+
+/* Reading mode: drop every mechanical block (also affects the PDF). */
+body.reading .fold[data-kind="tool_use"],
+body.reading .fold[data-kind="tool_result"],
+body.reading .fold[data-kind="thinking"],
+body.reading .turn.tool,
+body.reading .turn.assistant.no-prose{display:none}
+
+/* ---- print / PDF ---- */
+@media print{
+  :root{
+    --bg:#fff;--panel:#fff;--panel2:#f1f1f1;--text:#111;--muted:#555;
+    --border:#c9c9c9;--user:#1f6f97;--assistant:#2c7a3a;--tool:#666;
+    --summary:#8a6100;--accent:#2033aa;--code-bg:#f6f6f6;
+  }
+  body{background:#fff}
+  .toolbar,#top{display:none !important}
+  .wrap{display:block;max-width:none}
+  nav{position:static;height:auto;overflow:visible;border:0;padding:0;
+    page-break-after:always;break-after:page}
+  nav h2{font-size:15pt;margin:0 0 8pt}
+  nav ol{padding:0;margin:0}
+  nav li{margin:0 0 3pt;break-inside:avoid;page-break-inside:avoid}
+  nav a{display:block;font-size:10.5pt;line-height:1.35;padding:0 0 0 1.7em;border:0;
+    border-radius:0;text-indent:-1.7em;
+    white-space:normal !important;overflow:visible !important;text-overflow:clip !important;
+    overflow-wrap:anywhere;word-break:break-word}
+  nav a::before{content:counter(q) ". "}
+  nav a:hover{background:none}
+  .body h1,.body h2,.body h3,.body h4,.turn .who{overflow-wrap:anywhere;word-break:break-word}
+  main{padding:0}
+  header.doc{border-bottom:1px solid var(--border)}
+  .turn{margin:10pt 0;border:0;border-left:2.5pt solid var(--border);
+    border-radius:0;padding:4pt 0 4pt 10pt;background:none;break-inside:auto}
+  .turn .when,.turn .sidechain{color:var(--muted)}
+  .body pre{white-space:pre-wrap;word-break:break-word;overflow:visible}
+  .fold{break-inside:avoid}
+  .fold-h{white-space:normal}
+  a{color:var(--text);text-decoration:none}
+  .body a{color:var(--accent)}
+}
+"""
+
+PAGE_JS = """
+document.querySelectorAll('pre code').forEach(function(el){
+  try{ if(window.hljs) hljs.highlightElement(el); }catch(e){}
+});
+function toggleFold(el){ if(el) el.classList.toggle('open'); }
+document.addEventListener('click', function(e){
+  var h = e.target.closest && e.target.closest('.fold-h');
+  if(h) toggleFold(h.parentElement);
+});
+document.addEventListener('keydown', function(e){
+  if((e.key === 'Enter' || e.key === ' ') && e.target.classList &&
+     e.target.classList.contains('fold-h')){
+    e.preventDefault(); toggleFold(e.target.parentElement);
+  }
+});
+function setAllFolds(open){
+  document.querySelectorAll('.fold').forEach(function(d){ d.classList.toggle('open', open); });
+}
+var be = document.getElementById('exp'); if(be) be.onclick = function(){ setAllFolds(true); };
+var bc = document.getElementById('col'); if(bc) bc.onclick = function(){ setAllFolds(false); };
+
+var br = document.getElementById('reading');
+if(br) br.onclick = function(){
+  var on = document.body.classList.toggle('reading');
+  br.classList.toggle('on', on);
+  br.textContent = on ? 'Reading mode: ON' : 'Reading mode';
+};
+
+var bt = document.getElementById('theme');
+if(bt) bt.onclick = function(){
+  var r = document.documentElement;
+  var dark = r.dataset.theme ? (r.dataset.theme === 'dark')
+           : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme = dark ? 'light' : 'dark';
+};
+
+var bp = document.getElementById('pdf');
+if(bp) bp.onclick = function(){ window.print(); };
+"""
+
+
+def render_page(turns, *, title: str, source: str, session_id: str,
+                force_light: bool) -> str:
+    nav_items = []
+    body_parts = []
+    q = 0
+    for idx, t in enumerate(turns):
+        anchor = f"t{idx}"
+        role = t["role"]
+        label = ROLE_LABEL.get(role, role.title())
+        when = f'<span class="when">{html.escape(t["ts"])}</span>' if t["ts"] else ""
+        side = '<span class="sidechain">subagent</span>' if t["side"] else ""
+        klass = f"turn {html.escape(role)}" + (" no-prose" if t.get("no_prose") else "")
+        body_parts.append(
+            f'<section class="{klass}" id="{anchor}">'
+            f'<div class="who">{label}{when}{side}</div>'
+            f'<div class="body">{t["html"]}</div></section>'
+        )
+        if role == "user" and t.get("snippet"):
+            q += 1
+            nav_items.append(
+                f'<li><a href="#{anchor}">{html.escape(t["snippet"])}</a></li>'
+            )
+
+    nav_html = (
+        '<nav><h2>Your messages</h2><ol>' + "".join(nav_items) + "</ol></nav>"
+        if nav_items
+        else "<nav><h2>Transcript</h2></nav>"
+    )
+    theme_attr = ' data-theme="light"' if force_light else ""
+    meta = (
+        f"{html.escape(source)} &middot; session {html.escape(session_id or 'n/a')} "
+        f"&middot; {len(turns)} entries &middot; generated "
+        f"{dt.datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    )
+
+    return f"""<!doctype html>
+<html lang="en"{theme_attr}>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{html.escape(title)}</title>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>{PAGE_CSS}</style>
+</head>
+<body>
+<div class="wrap">
+{nav_html}
+<main>
+<header class="doc">
+  <h1>{html.escape(title)}</h1>
+  <div class="meta">{meta}</div>
+  <div class="toolbar">
+    <button id="exp">Expand all tools</button>
+    <button id="col">Collapse all tools</button>
+    <button id="reading" title="Hide every tool call, tool result and thinking block">Reading mode</button>
+    <button id="theme">Toggle light / dark</button>
+    <button id="pdf" title="Opens the browser print dialog – choose &quot;Save as PDF&quot;. Whatever is hidden or collapsed now is left out of the PDF.">Export to PDF</button>
+  </div>
+</header>
+{''.join(body_parts)}
+</main>
+</div>
+<a id="top" href="#">&#8679; top</a>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>{PAGE_JS}</script>
+</body>
+</html>
+"""
+
+
+# --------------------------------------------------------------------------- #
+#  cli
+# --------------------------------------------------------------------------- #
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("transcript", nargs="?", type=Path,
+                    help="path to a Claude Code *.jsonl transcript")
+    ap.add_argument("-o", "--output", type=Path)
+    ap.add_argument("--latest", action="store_true",
+                    help="use the newest transcript under ~/.claude/projects/")
+    ap.add_argument("--title")
+    ap.add_argument("--open", action="store_true")
+    ap.add_argument("--max-result", type=int, default=20000)
+    ap.add_argument("--no-meta", action="store_true")
+    ap.add_argument("--light", action="store_true")
+    args = ap.parse_args()
+
+    src: Path | None = args.transcript
+    if args.latest or src is None:
+        src = find_latest_transcript() if (args.latest or src is None) else src
+    if src is None or not src.is_file():
+        print("error: no transcript file found. Pass a path or use --latest.",
+              file=sys.stderr)
+        return 2
+
+    events = load_events(src)
+    if not events:
+        print("error: transcript is empty or unreadable.", file=sys.stderr)
+        return 1
+
+    session_id = ""
+    for ev in events:
+        if ev.get("sessionId"):
+            session_id = str(ev["sessionId"])
+            break
+
+    turns = build_turns(events, drop_meta=args.no_meta, max_result=args.max_result)
+    title = args.title or f"Claude Code transcript — {src.stem}"
+    page = render_page(turns, title=title, source=src.name,
+                       session_id=session_id, force_light=args.light)
+
+    out = args.output or src.with_suffix(".html")
+    out.write_text(page, encoding="utf-8")
+    print(f"wrote {out}  ({out.stat().st_size / 1024:.0f} KB, {len(turns)} entries)")
+
+    if args.open:
+        webbrowser.open(out.resolve().as_uri())
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

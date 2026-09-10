@@ -134,12 +134,13 @@ func _layout() -> void:
 	var pb := HUD_BTN
 	var box := Vector2(52, 40)
 
-	# The two icon buttons and their preview boxes hug the board but sit ~15 px
+	# The two icon buttons and their preview boxes hug the board but sit ~35 px
 	# past each board edge, so a wide window doesn't fling them to the screen
-	# edges yet they still clear the centred LEVEL / LINES text. Each button is
-	# centred exactly over its box. Clamped on-screen — on a phone the board
-	# already fills the width, so the group lands flush at the edges.
-	var out := 15.0
+	# edges yet they still clear the centred LEVEL / LINES text (which grows as
+	# the counters go multi-digit). Each button is centred exactly over its box.
+	# Clamped on-screen — on a phone the board already fills the width, so the
+	# group lands flush at the edges.
+	var out := 35.0
 	var span := minf(board_w + 2.0 * out, area_w)
 	var gx := clampf(wx + board_w * 0.5 - span * 0.5, area_x, area_x + area_w - span)
 	var left_cx := gx + pb * 0.5
@@ -156,13 +157,14 @@ func _layout() -> void:
 	# the two boxes so a short-and-wide window (small board, boxes close in) can't
 	# let the text run under them.
 	var sx := wx + board_w * 0.5
-	var inner := maxf((right_cx - left_cx) - box.x - 16.0, 140.0)
+	var inner := maxf((right_cx - left_cx) - box.x - 16.0, 160.0)
+	var lbl_gap := 11.0   # half the space between the LEVEL and LINES columns
 	_score_label.position = Vector2(sx - inner * 0.5, hud_y + 4)
 	_score_label.size = Vector2(inner, 36)
 	_level_label.position = Vector2(sx - inner * 0.5, hud_y + 46)
-	_level_label.size = Vector2(inner * 0.5 - 3.0, 20)
-	_lines_label.position = Vector2(sx + 3.0, hud_y + 46)
-	_lines_label.size = Vector2(inner * 0.5 - 3.0, 20)
+	_level_label.size = Vector2(inner * 0.5 - lbl_gap, 20)
+	_lines_label.position = Vector2(sx + lbl_gap, hud_y + 46)
+	_lines_label.size = Vector2(inner * 0.5 - lbl_gap, 20)
 	queue_redraw()
 
 

@@ -21,23 +21,22 @@ enum Screen { NONE, SPLASH, START, PAUSE, SETTINGS, SOUND, HELP, GAMEOVER }
 const SPLASH_TIME := 2.6
 
 ## Image-based How-to-Play. Two page sets — the mouse/keyboard set on desktop,
-## the touch set on a touchscreen. `tex` is preload()ed so exported builds pack
-## it reliably (a runtime load() of an imported PNG can miss on native exports);
-## null pages show a text placeholder until their art lands.
-const HELP_HUD := preload("res://assets/graphics/help/hud.png")
-const HELP_GOAL := preload("res://assets/graphics/help/goal.png")
+## the touch set on a touchscreen. Page art is load()ed on demand (only the
+## current page stays resident); export_filter is "all_resources" so every PNG
+## is packed on every platform.
+const HELP_DIR := "res://assets/graphics/help/"
 const HELP_MOUSE := [
-	{"tex": preload("res://assets/graphics/help/mouse.png"),    "title": "Mouse controls"},
-	{"tex": preload("res://assets/graphics/help/aim.png"),      "title": "Aim & auto-rotate"},
-	{"tex": HELP_HUD,  "title": "The buttons"},
-	{"tex": preload("res://assets/graphics/help/keyboard.png"), "title": "Keyboard"},
-	{"tex": HELP_GOAL, "title": "Goal & scoring"},
+	{"file": "mouse",     "title": "Mouse controls"},
+	{"file": "aim",       "title": "Aim & auto-rotate"},
+	{"file": "hud",       "title": "The buttons"},
+	{"file": "keyboard",  "title": "Keyboard"},
+	{"file": "goal",      "title": "Goal & scoring"},
 ]
 const HELP_TOUCH := [
-	{"tex": preload("res://assets/graphics/help/swipe.png"),     "title": "Swipe & tap"},
-	{"tex": preload("res://assets/graphics/help/aim-touch.png"), "title": "Aim & auto-rotate"},
-	{"tex": HELP_HUD,  "title": "The buttons"},
-	{"tex": HELP_GOAL, "title": "Goal & scoring"},
+	{"file": "swipe",     "title": "Swipe & tap"},
+	{"file": "aim-touch", "title": "Aim & auto-rotate"},
+	{"file": "hud",       "title": "The buttons"},
+	{"file": "goal",      "title": "Goal & scoring"},
 ]
 const HELP_SWIPE_MIN := 60.0
 
@@ -383,7 +382,11 @@ func _help_go(delta: int) -> void:
 		return
 	_help_page = wrapi(_help_page + delta, 0, pages.size())
 	var entry: Dictionary = pages[_help_page]
-	var tex: Texture2D = entry.get("tex")
+	# load() directly (not gated by ResourceLoader.exists(), which is unreliable
+	# for imported resources in native exports — that hid the images on Linux /
+	# Android while the web build was fine)
+	var path := HELP_DIR + str(entry.get("file", "")) + ".png"
+	var tex := load(path) as Texture2D
 	_help_tex.texture = tex
 	_help_tex.visible = tex != null
 	_help_ph.visible = tex == null

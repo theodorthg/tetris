@@ -24,7 +24,21 @@ const SoundManager := preload("res://sound_manager.gd")
 func _snd() -> Node:
 	return get_node_or_null(^"/root/Snd")
 
-enum Screen { NONE, SPLASH, START, PAUSE, SETTINGS, SOUND, HELP, GAMEOVER }
+enum Screen { NONE, SPLASH, START, PAUSE, SETTINGS, SOUND, CONTROLS, HELP, GAMEOVER }
+
+## Remappable keyboard actions — display name + default physical keycode.
+## Saved overrides live in user://settings.cfg [keys]; the gamepad bindings
+## from project.godot are left untouched.
+const KEY_ACTIONS := [
+	["move_left",  "Move left",   KEY_LEFT],
+	["move_right", "Move right",  KEY_RIGHT],
+	["soft_drop",  "Soft drop",   KEY_DOWN],
+	["hard_drop",  "Hard drop",   KEY_SPACE],
+	["rotate_cw",  "Rotate right", KEY_UP],
+	["rotate_ccw", "Rotate left", KEY_Z],
+	["hold_piece", "Hold",        KEY_C],
+	["pause_game", "Pause",       KEY_ESCAPE],
+]
 
 const SPLASH_TIME := 2.6
 
@@ -78,12 +92,15 @@ var _help_dots: HBoxContainer
 var _help_swipe_id := -1
 var _help_swipe_x := 0.0
 
+var _capturing := ""     ## action currently waiting for a key press, or ""
+
 
 func _ready() -> void:
 	layer = 10
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_load_settings()
 	_load_hof()
+	_apply_keys()
 
 	# black backdrop so the artwork can be shown whole (letterboxed) on it;
 	# only visible on the screens that show the artwork (start / gameover / splash)
@@ -227,6 +244,15 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if _screen == Screen.HELP:
 		_help_input(event)
+
+	if _capturing != "" and event is InputEventKey and event.pressed and not event.echo:
+		get_viewport().set_input_as_handled()
+		var kc: int = event.physical_keycode if event.physical_keycode != 0 else event.keycode
+		if kc != KEY_ESCAPE:                       # Esc cancels the capture
+			_rebind(_capturing, kc)
+			_save_key(_capturing, kc)
+		_capturing = ""
+		_build()
 
 
 func _help_input(event: InputEvent) -> void:
@@ -459,6 +485,14 @@ func handle_back() -> bool:
 			_screen = Screen.SETTINGS
 			_build()
 			return true
+		Screen.CONTROLS:
+			if _capturing != "":
+				_capturing = ""
+				_build()
+			else:
+				_screen = Screen.SETTINGS
+				_build()
+			return true
 		Screen.PAUSE:
 			resume_pressed.emit()
 			return true
@@ -511,6 +545,8 @@ func _build() -> void:
 			_settings_screen()
 		Screen.SOUND:
 			_sound_screen()
+		Screen.CONTROLS:
+			_controls_screen()
 		Screen.GAMEOVER:
 			_game_over_screen()
 
@@ -610,7 +646,93 @@ func _settings_screen() -> void:
 	_button("Sound", func():
 		_screen = Screen.SOUND
 		_build())
+	_button("Controls", func():
+		_screen = Screen.CONTROLS
+		_build())
 	_button("Back", func(): handle_back())
+
+
+func _controls_screen() -> void:
+	_title("Controls", 30)
+	_label("Tap a key to rebind it. Esc cancels.", 13)
+	_gap(4)
+	for entry in KEY_ACTIONS:
+		var action: String = entry[0]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		row.custom_minimum_size = Vector2(0, 38)
+		_box.add_child(row)
+
+		var name_lbl := Label.new()
+		name_lbl.text = entry[1]
+		name_lbl.add_theme_font_size_override("font_size", 16)
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(name_lbl)
+
+		var key_btn := Button.new()
+		key_btn.custom_minimum_size = Vector2(140, 34)
+		key_btn.focus_mode = Control.FOCUS_NONE
+		key_btn.add_theme_font_size_override("font_size", 16)
+		if _capturing == action:
+			key_btn.text = "press a key…"
+			key_btn.add_theme_color_override("font_color", Color("f0c02a"))
+		else:
+			key_btn.text = _key_label(action)
+		row.add_child(key_btn)
+		key_btn.pressed.connect(func():
+			_capturing = action
+			_build())
+
+	_gap(10)
+	_button("Reset to defaults", func():
+		_capturing = ""
+		_reset_keys())
+	_button("Back", func(): handle_back())
+
+
+func _key_label(action: String) -> String:
+	for e in InputMap.action_get_events(action):
+		if e is InputEventKey:
+			var kc: int = e.physical_keycode if e.physical_keycode != 0 else e.keycode
+			var lbl := DisplayServer.keyboard_get_label_from_physical(kc)
+			return OS.get_keycode_string(lbl if lbl != 0 else kc)
+	return "—"
+
+
+func _rebind(action: String, phys_keycode: int) -> void:
+	for e in InputMap.action_get_events(action):
+		if e is InputEventKey:
+			InputMap.action_erase_event(action, e)
+	var ev := InputEventKey.new()
+	ev.physical_keycode = phys_keycode
+	InputMap.action_add_event(action, ev)
+
+
+func _apply_keys() -> void:
+	var cf := ConfigFile.new()
+	if cf.load(SETTINGS_PATH) != OK:
+		return
+	for entry in KEY_ACTIONS:
+		var kc := int(cf.get_value("keys", entry[0], 0))
+		if kc != 0:
+			_rebind(entry[0], kc)
+
+
+func _save_key(action: String, phys_keycode: int) -> void:
+	var cf := ConfigFile.new()
+	cf.load(SETTINGS_PATH)
+	cf.set_value("keys", action, int(phys_keycode))
+	cf.save(SETTINGS_PATH)
+
+
+func _reset_keys() -> void:
+	var cf := ConfigFile.new()
+	if cf.load(SETTINGS_PATH) == OK and cf.has_section("keys"):
+		cf.erase_section("keys")
+		cf.save(SETTINGS_PATH)
+	InputMap.load_from_project_settings()
+	_build()
 
 
 func _sound_screen() -> void:

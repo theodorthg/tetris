@@ -31,7 +31,10 @@ Aufrufen:
 - **Web:** `cd projects/web-release-tetris && python3 -m http.server 8099` → `http://localhost:8099/`
 - **Android:** von `build.sh` direkt installiert; sonst
   `~/Android/Sdk/platform-tools/adb install -r projects/tetris-android.apk`
-- **Windows:** nur CI, manuell — `gh workflow run windows-export.yml` (bei Release).
+- **Windows:** CI. Release-Tag pushen → Build + GitHub-Release:
+  `git tag -a vX.Y.Z -m "…" && git push origin vX.Y.Z` (oder manuell
+  `gh workflow run windows-export.yml`). `config/version` in `project.godot`
+  vorher passend setzen.
 
 ## Design-Entscheidungen
 

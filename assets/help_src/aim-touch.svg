@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1280" viewBox="0 0 960 1280" font-family="DejaVu Sans, 'Liberation Sans', sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f121b"/><stop offset="1" stop-color="#0a0c13"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f0c02a"/>
+    </marker>
+  </defs>
+  <rect width="960" height="1280" fill="url(#bg)"/>
+  <rect x="16" y="16" width="928" height="1248" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
+
+  <text x="480" y="96" text-anchor="middle" font-size="52" font-weight="700" fill="#eef2fa" letter-spacing="2">AIM = AUTO-ROTATE</text>
+  <rect x="300" y="116" width="360" height="4" rx="2" fill="#f0c02a"/>
+  <text x="480" y="158" text-anchor="middle" font-size="25" fill="#9fb0cc">swipe to a column — the piece spins and drops to fit</text>
+
+  <!-- well 6x10, cell 56, origin 312,206 -->
+  <rect x="312" y="206" width="336" height="560" fill="#0c0f17" stroke="#2c3547" stroke-width="3"/>
+  <g stroke="#1b2230" stroke-width="1">
+    <line x1="368" y1="206" x2="368" y2="766"/><line x1="424" y1="206" x2="424" y2="766"/><line x1="480" y1="206" x2="480" y2="766"/>
+    <line x1="536" y1="206" x2="536" y2="766"/><line x1="592" y1="206" x2="592" y2="766"/>
+    <line x1="312" y1="262" x2="648" y2="262"/><line x1="312" y1="318" x2="648" y2="318"/><line x1="312" y1="374" x2="648" y2="374"/>
+    <line x1="312" y1="430" x2="648" y2="430"/><line x1="312" y1="486" x2="648" y2="486"/><line x1="312" y1="542" x2="648" y2="542"/>
+    <line x1="312" y1="598" x2="648" y2="598"/><line x1="312" y1="654" x2="648" y2="654"/><line x1="312" y1="710" x2="648" y2="710"/>
+  </g>
+
+  <!-- target column highlight (col 5) -->
+  <rect x="592" y="206" width="56" height="560" fill="#f0c02a" fill-opacity="0.10"/>
+
+  <!-- locked stack -->
+  <g fill="#5a6a86">
+    <rect x="313" y="655" width="54" height="54"/><rect x="369" y="655" width="54" height="54"/><rect x="425" y="655" width="54" height="54"/><rect x="481" y="655" width="54" height="54"/><rect x="537" y="655" width="54" height="54"/>
+    <rect x="313" y="711" width="54" height="54"/><rect x="369" y="711" width="54" height="54"/><rect x="425" y="711" width="54" height="54"/><rect x="481" y="711" width="54" height="54"/><rect x="537" y="711" width="54" height="54"/>
+    <rect x="313" y="599" width="54" height="54"/><rect x="369" y="599" width="54" height="54"/><rect x="425" y="599" width="54" height="54"/>
+    <rect x="313" y="543" width="54" height="54"/><rect x="369" y="543" width="54" height="54"/>
+  </g>
+
+  <!-- falling I piece, horizontal, row 0 cols 1..4 -->
+  <g fill="#2ad4d4">
+    <rect x="369" y="207" width="54" height="54"/><rect x="425" y="207" width="54" height="54"/><rect x="481" y="207" width="54" height="54"/><rect x="537" y="207" width="54" height="54"/>
+  </g>
+
+  <!-- ghost: vertical I in col 5 rows 6..9 -->
+  <g fill="#2ad4d4" fill-opacity="0.14" stroke="#2ad4d4" stroke-width="3" stroke-dasharray="7 5">
+    <rect x="593" y="543" width="52" height="52"/><rect x="593" y="599" width="52" height="52"/><rect x="593" y="655" width="52" height="52"/><rect x="593" y="711" width="52" height="52"/>
+  </g>
+
+  <!-- arrow from falling piece to ghost -->
+  <path d="M540 226 C 720 250, 726 470, 620 540" fill="none" stroke="#f0c02a" stroke-width="6" marker-end="url(#arrow)"/>
+  <g transform="translate(724 372)">
+    <path d="M0 -18 A 18 18 0 1 1 -16 9" fill="none" stroke="#f0c02a" stroke-width="5"/>
+    <path d="M-16 9 l -9 -5 l 11 -6 z" fill="#f0c02a"/>
+  </g>
+  <text x="760" y="368" font-size="22" font-weight="700" fill="#f0c02a">rotates</text>
+  <text x="760" y="394" font-size="22" font-weight="700" fill="#f0c02a">to fit</text>
+
+  <!-- touch ripple on the target column -->
+  <g>
+    <circle cx="620" cy="628" r="34" fill="none" stroke="#e8eefc" stroke-opacity="0.35" stroke-width="3"/>
+    <circle cx="620" cy="628" r="20" fill="none" stroke="#e8eefc" stroke-opacity="0.6" stroke-width="3"/>
+    <circle cx="620" cy="628" r="9" fill="#e8eefc"/>
+  </g>
+  <path d="M690 628 L 662 628" stroke="#5c6b86" stroke-width="2"/>
+  <text x="700" y="622" font-size="24" font-weight="700" fill="#eef2fa">your finger</text>
+  <text x="700" y="650" font-size="21" fill="#9fb0cc">swipe to move it</text>
+
+  <!-- captions -->
+  <text x="480" y="854" text-anchor="middle" font-size="30" font-weight="700" fill="#eef2fa">You pick the column.</text>
+  <text x="480" y="896" text-anchor="middle" font-size="30" font-weight="700" fill="#f0c02a">The game rotates &amp; places the piece.</text>
+  <text x="480" y="936" text-anchor="middle" font-size="22" fill="#9fb0cc">double-tap if you want a different rotation</text>
+</svg>

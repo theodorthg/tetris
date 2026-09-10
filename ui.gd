@@ -24,19 +24,20 @@ const SPLASH_TIME := 2.6
 ## the touch set on a touchscreen. `tex` is preload()ed so exported builds pack
 ## it reliably (a runtime load() of an imported PNG can miss on native exports);
 ## null pages show a text placeholder until their art lands.
-const HELP_AIM := preload("res://assets/graphics/help/aim.png")
+const HELP_HUD := preload("res://assets/graphics/help/hud.png")
+const HELP_GOAL := preload("res://assets/graphics/help/goal.png")
 const HELP_MOUSE := [
-	{"tex": preload("res://assets/graphics/help/mouse.png"), "title": "Mouse controls"},
-	{"tex": HELP_AIM, "title": "Aim & auto-rotate"},
-	{"tex": null, "title": "HUD buttons"},
-	{"tex": null, "title": "Keyboard"},
-	{"tex": null, "title": "Goal"},
+	{"tex": preload("res://assets/graphics/help/mouse.png"),    "title": "Mouse controls"},
+	{"tex": preload("res://assets/graphics/help/aim.png"),      "title": "Aim & auto-rotate"},
+	{"tex": HELP_HUD,  "title": "The buttons"},
+	{"tex": preload("res://assets/graphics/help/keyboard.png"), "title": "Keyboard"},
+	{"tex": HELP_GOAL, "title": "Goal & scoring"},
 ]
 const HELP_TOUCH := [
-	{"tex": null, "title": "Swipe & tap"},
-	{"tex": HELP_AIM, "title": "Aim & auto-rotate"},
-	{"tex": null, "title": "HUD buttons"},
-	{"tex": null, "title": "Goal"},
+	{"tex": preload("res://assets/graphics/help/swipe.png"),     "title": "Swipe & tap"},
+	{"tex": preload("res://assets/graphics/help/aim-touch.png"), "title": "Aim & auto-rotate"},
+	{"tex": HELP_HUD,  "title": "The buttons"},
+	{"tex": HELP_GOAL, "title": "Goal & scoring"},
 ]
 const HELP_SWIPE_MIN := 60.0
 

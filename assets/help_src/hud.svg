@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="960" viewBox="0 0 1280 960" font-family="DejaVu Sans, 'Liberation Sans', sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f121b"/><stop offset="1" stop-color="#0a0c13"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="960" fill="url(#bg)"/>
+  <rect x="18" y="18" width="1244" height="924" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
+
+  <text x="640" y="102" text-anchor="middle" font-size="60" font-weight="700" fill="#eef2fa" letter-spacing="5">THE BUTTONS</text>
+  <rect x="512" y="122" width="256" height="4" rx="2" fill="#f0c02a"/>
+
+  <!-- HOLD -->
+  <g transform="translate(330 288)">
+    <circle cx="0" cy="0" r="76" fill="#d9e6ff" fill-opacity="0.14" stroke="#d9e6ff" stroke-opacity="0.35" stroke-width="3"/>
+    <g stroke="#e8eefc" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-32 -14 L 30 -14"/><path d="M16 -29 L 32 -14 L 16 1"/>
+      <path d="M32 16 L -30 16"/><path d="M-16 1 L -32 16 L -16 31"/>
+    </g>
+  </g>
+  <text x="330" y="416" text-anchor="middle" font-size="34" font-weight="700" fill="#eef2fa">HOLD</text>
+  <text x="330" y="458" text-anchor="middle" font-size="24" fill="#c7d2e6">Park the current piece.</text>
+  <text x="330" y="490" text-anchor="middle" font-size="24" fill="#c7d2e6">Tap again to swap it back —</text>
+  <text x="330" y="522" text-anchor="middle" font-size="24" fill="#c7d2e6">once per piece.</text>
+  <text x="330" y="562" text-anchor="middle" font-size="21" fill="#8fa0bc">keyboard: C / End · mouse: right-click</text>
+
+  <!-- PAUSE -->
+  <g transform="translate(950 288)">
+    <circle cx="0" cy="0" r="76" fill="#d9e6ff" fill-opacity="0.14" stroke="#d9e6ff" stroke-opacity="0.35" stroke-width="3"/>
+    <circle cx="0" cy="0" r="46" fill="none" stroke="#e8eefc" stroke-width="6"/>
+    <rect x="-20" y="-24" width="15" height="48" rx="4" fill="#e8eefc"/>
+    <rect x="5" y="-24" width="15" height="48" rx="4" fill="#e8eefc"/>
+  </g>
+  <text x="950" y="416" text-anchor="middle" font-size="34" font-weight="700" fill="#eef2fa">PAUSE</text>
+  <text x="950" y="458" text-anchor="middle" font-size="24" fill="#c7d2e6">Open the menu: resume,</text>
+  <text x="950" y="490" text-anchor="middle" font-size="24" fill="#c7d2e6">settings, how to play, restart.</text>
+  <text x="950" y="562" text-anchor="middle" font-size="21" fill="#8fa0bc">keyboard: Esc / P</text>
+
+  <!-- placement -->
+  <text x="640" y="648" text-anchor="middle" font-size="24" fill="#9fb0cc">they live in the top corners — never over the field</text>
+  <rect x="536" y="686" width="208" height="230" rx="6" fill="#0c0f17" stroke="#2c3547" stroke-width="3"/>
+  <g stroke="#1b2230" stroke-width="1">
+    <line x1="588" y1="686" x2="588" y2="916"/><line x1="640" y1="686" x2="640" y2="916"/><line x1="692" y1="686" x2="692" y2="916"/>
+    <line x1="536" y1="744" x2="744" y2="744"/><line x1="536" y1="802" x2="744" y2="802"/><line x1="536" y1="860" x2="744" y2="860"/>
+  </g>
+  <g transform="translate(520 700)">
+    <circle cx="0" cy="0" r="26" fill="#d9e6ff" fill-opacity="0.16" stroke="#d9e6ff" stroke-opacity="0.4" stroke-width="2"/>
+    <g stroke="#e8eefc" stroke-width="3.5" fill="none" stroke-linecap="round"><path d="M-11 -5 L 10 -5"/><path d="M5 -10 L 11 -5 L 5 0"/><path d="M11 5 L -10 5"/><path d="M-5 0 L -11 5 L -5 10"/></g>
+  </g>
+  <g transform="translate(760 700)">
+    <circle cx="0" cy="0" r="26" fill="#d9e6ff" fill-opacity="0.16" stroke="#d9e6ff" stroke-opacity="0.4" stroke-width="2"/>
+    <circle cx="0" cy="0" r="15" fill="none" stroke="#e8eefc" stroke-width="2.5"/>
+    <rect x="-6" y="-8" width="4.5" height="16" rx="1.5" fill="#e8eefc"/><rect x="1.5" y="-8" width="4.5" height="16" rx="1.5" fill="#e8eefc"/>
+  </g>
+  <text x="470" y="812" text-anchor="end" font-size="20" fill="#8fa0bc">Hold +</text>
+  <text x="470" y="836" text-anchor="end" font-size="20" fill="#8fa0bc">piece preview</text>
+  <text x="812" y="812" font-size="20" fill="#8fa0bc">Pause +</text>
+  <text x="812" y="836" font-size="20" fill="#8fa0bc">next preview</text>
+</svg>

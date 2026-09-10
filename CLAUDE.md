@@ -78,11 +78,32 @@ Vollbild-Blättern in `ui.gd` (`show_help` / `_build_help_overlay` / `_help_go`)
 - Fertig: `mouse`, `aim-mouse`. Offen: `hud`, `keyboard`, `goal`, `swipe`,
   `aim-touch`. Text durchgängig Englisch.
 
+## Sounds (`assets/sounds/`, alle vorhanden)
+
+`SoundManager`-Autoload wie pacman (`sound_manager.gd`): `SOUNDS`-Map
+`key -> [Anzeigename, Default-%]`, `_BASE_DB`-Kalibrierung je Sound (100 % klingt
+ausgewogen), Vorhör bei Reglerwechsel, Persistenz `user://settings.cfg`
+Abschnitt `sound`, `_CALIB_VERSION`.
+
+| Datei | Event | Hinweis |
+|---|---|---|
+| `tetris-theme.ogg` | Hintergrund-Loop | an/aus über **allgemeine** Settings (nicht Sound-Settings — die regeln nur Lautstärke) |
+| `click-sound.ogg` | jede Horizontalbewegung: Maus links/rechts, jede Rasterposition beim Swipen, jeder Tap / Mausklick | **leisester** Sound |
+| `drop-sound.ogg` | Hard-Drop bzw. wenn ein Stein gesetzt/gelockt wurde | |
+| `hold-sound.ogg` | Hold | |
+| `one-line-cleared.ogg` | genau 1 Zeile gecleared | |
+| `line-cleared.ogg` | 2+ Zeilen gecleared | |
+| `game-over-sound.ogg` | Game Over | |
+
+Sound-Settings-Unterseite: pro Sound ein 0–100-%-Regler. Allgemeine Settings:
+Schalter „Music" (Theme-Loop an/aus).
+
 ## Offen / später
 
-- Sounds + Sound-Settings-Unterseite mit Pro-Sound-Lautstärke.
 - Einstellungen: Tastenbelegung im Spiel anpassbar machen.
-- Restliche Hilfe-Bilder (siehe oben).
+- Restliche Hilfe-Bilder: `hud`, `keyboard`, `goal`, `swipe`, `aim-touch`
+  (dann `aim` wieder maus-spezifisch).
+- Politur: Line-Clear-Animation, T-Spin/Combo, Level-Up-Feedback.
 - Politur: Line-Clear-Animation, T-Spin/Combo-Scoring, Level-Up-Feedback.
 
 ## Aseprite MCP Pro

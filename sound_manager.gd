@@ -7,17 +7,17 @@ extends Node
 ## on/off switch lives in the *general* settings, not here.
 
 const CFG_PATH := "user://settings.cfg"
-const CALIB_VERSION := 1
+const CALIB_VERSION := 2   ## bump to re-apply the reference defaults below
 
-## key -> { name, file, def (default %), base_db (calibration) }
+## key -> { name, file, def (reference %), base_db (calibration so `def` is balanced) }
 const SOUNDS := {
 	"move":  {"name": "Move / click",      "file": "click-sound.ogg",       "def": 55, "base_db": -7.0},
-	"drop":  {"name": "Drop / lock",       "file": "drop-sound.ogg",        "def": 80, "base_db": -1.0},
-	"hold":  {"name": "Hold",              "file": "hold-sound.ogg",        "def": 75, "base_db": -3.0},
+	"drop":  {"name": "Drop / lock",       "file": "drop-sound.ogg",        "def": 85, "base_db": -1.0},
+	"hold":  {"name": "Hold",              "file": "hold-sound.ogg",        "def": 85, "base_db": -3.0},
 	"line1": {"name": "Line clear",        "file": "one-line-cleared.ogg",  "def": 85, "base_db": -1.0},
 	"lines": {"name": "Multi-line clear",  "file": "line-cleared.ogg",      "def": 90, "base_db":  0.0},
-	"over":  {"name": "Game over",         "file": "game-over-sound.ogg",    "def": 85, "base_db": -3.0},
-	"music": {"name": "Music",             "file": "tetris-theme.ogg",      "def": 40, "base_db": -6.0},
+	"over":  {"name": "Game over",         "file": "game-over-sound.ogg",    "def": 90, "base_db": -3.0},
+	"music": {"name": "Music",             "file": "tetris-theme.ogg",      "def": 15, "base_db": -6.0},
 }
 const SFX_ORDER := ["move", "drop", "hold", "line1", "lines", "over", "music"]
 

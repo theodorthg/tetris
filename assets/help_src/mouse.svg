@@ -16,7 +16,7 @@
   <!-- header -->
   <text x="640" y="112" text-anchor="middle" font-size="66" font-weight="700" fill="#eef2fa" letter-spacing="6">MOUSE</text>
   <rect x="566" y="132" width="148" height="4" rx="2" fill="#f0c02a"/>
-  <text x="640" y="176" text-anchor="middle" font-size="26" fill="#9fb0cc">Play with the mouse — like play.tetris.com</text>
+  <text x="640" y="176" text-anchor="middle" font-size="26" fill="#9fb0cc">Move to aim, click to drop — the game fits the piece</text>
 
   <!-- ===== mouse illustration (centred ~x=640) ===== -->
   <g>

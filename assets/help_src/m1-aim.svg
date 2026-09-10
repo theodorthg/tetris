@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="960" viewBox="0 0 1280 960" font-family="DejaVu Sans, 'Liberation Sans', sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f121b"/>
+      <stop offset="1" stop-color="#0a0c13"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f0c02a"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="960" fill="url(#bg)"/>
+  <rect x="18" y="18" width="1244" height="924" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
+
+  <!-- header -->
+  <text x="640" y="104" text-anchor="middle" font-size="60" font-weight="700" fill="#eef2fa" letter-spacing="3">AIM  =  AUTO-ROTATE</text>
+  <rect x="470" y="124" width="340" height="4" rx="2" fill="#f0c02a"/>
+  <text x="640" y="166" text-anchor="middle" font-size="27" fill="#9fb0cc">Point at a column — the piece spins and drops to fit</text>
+
+  <!-- ===== well (6 x 10, cell 58, origin 466,196) ===== -->
+  <g>
+    <rect x="466" y="196" width="348" height="580" fill="#0c0f17" stroke="#2c3547" stroke-width="3"/>
+    <!-- grid -->
+    <g stroke="#1b2230" stroke-width="1">
+      <line x1="524" y1="196" x2="524" y2="776"/><line x1="582" y1="196" x2="582" y2="776"/>
+      <line x1="640" y1="196" x2="640" y2="776"/><line x1="698" y1="196" x2="698" y2="776"/>
+      <line x1="756" y1="196" x2="756" y2="776"/>
+      <line x1="466" y1="254" x2="814" y2="254"/><line x1="466" y1="312" x2="814" y2="312"/>
+      <line x1="466" y1="370" x2="814" y2="370"/><line x1="466" y1="428" x2="814" y2="428"/>
+      <line x1="466" y1="486" x2="814" y2="486"/><line x1="466" y1="544" x2="814" y2="544"/>
+      <line x1="466" y1="602" x2="814" y2="602"/><line x1="466" y1="660" x2="814" y2="660"/>
+      <line x1="466" y1="718" x2="814" y2="718"/>
+    </g>
+
+    <!-- highlighted target column (col 5) -->
+    <rect x="756" y="196" width="58" height="580" fill="#f0c02a" fill-opacity="0.10"/>
+
+    <!-- locked stack -->
+    <g>
+      <g fill="#5a6a86">
+        <!-- rows 8,9 : cols 0..4 filled -->
+        <rect x="467" y="661" width="56" height="56"/><rect x="525" y="661" width="56" height="56"/>
+        <rect x="583" y="661" width="56" height="56"/><rect x="641" y="661" width="56" height="56"/>
+        <rect x="699" y="661" width="56" height="56"/>
+        <rect x="467" y="719" width="56" height="56"/><rect x="525" y="719" width="56" height="56"/>
+        <rect x="583" y="719" width="56" height="56"/><rect x="641" y="719" width="56" height="56"/>
+        <rect x="699" y="719" width="56" height="56"/>
+        <!-- row 7 : cols 0..2 -->
+        <rect x="467" y="603" width="56" height="56"/><rect x="525" y="603" width="56" height="56"/>
+        <rect x="583" y="603" width="56" height="56"/>
+        <!-- row 6 : cols 0..1 -->
+        <rect x="467" y="545" width="56" height="56"/><rect x="525" y="545" width="56" height="56"/>
+      </g>
+    </g>
+
+    <!-- falling I piece (horizontal, row 0, cols 1..4) -->
+    <g fill="#33c7e8">
+      <rect x="525" y="197" width="56" height="56"/><rect x="583" y="197" width="56" height="56"/>
+      <rect x="641" y="197" width="56" height="56"/><rect x="699" y="197" width="56" height="56"/>
+    </g>
+
+    <!-- ghost: I piece vertical in col 5, rows 6..9 -->
+    <g fill="#33c7e8" fill-opacity="0.14" stroke="#33c7e8" stroke-width="3" stroke-dasharray="7 5">
+      <rect x="758" y="545" width="54" height="54"/><rect x="758" y="603" width="54" height="54"/>
+      <rect x="758" y="661" width="54" height="54"/><rect x="758" y="719" width="54" height="54"/>
+    </g>
+
+    <!-- curved arrow: falling piece -> ghost -->
+    <path d="M700 225 C 880 250, 900 430, 800 520" fill="none" stroke="#f0c02a" stroke-width="6" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- cursor pointing at the target column -->
+  <g transform="translate(838 430)">
+    <path d="M0 0 L0 34 L9 26 L15 40 L21 37 L15 23 L27 23 Z" fill="#ffffff" stroke="#0b0e15" stroke-width="2"/>
+  </g>
+  <text x="900" y="430" font-size="24" fill="#9fb0cc">your pointer</text>
+  <text x="900" y="460" font-size="24" fill="#9fb0cc">(or finger)</text>
+
+  <!-- captions -->
+  <text x="640" y="836" text-anchor="middle" font-size="30" font-weight="700" fill="#eef2fa">You choose the column.</text>
+  <text x="640" y="878" text-anchor="middle" font-size="30" font-weight="700" fill="#f0c02a">The game rotates &amp; places the piece.</text>
+  <text x="640" y="916" text-anchor="middle" font-size="22" fill="#9fb0cc">the dashed ghost always shows where it will land</text>
+</svg>

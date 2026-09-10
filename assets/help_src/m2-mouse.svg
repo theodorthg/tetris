@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="960" viewBox="0 0 1280 960" font-family="DejaVu Sans, 'Liberation Sans', sans-serif">
+  <defs>
+    <linearGradient id="mouseBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b3448"/>
+      <stop offset="1" stop-color="#151b28"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f121b"/>
+      <stop offset="1" stop-color="#0a0c13"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="960" fill="url(#bg)"/>
+  <rect x="18" y="18" width="1244" height="924" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
+
+  <!-- header -->
+  <text x="640" y="112" text-anchor="middle" font-size="66" font-weight="700" fill="#eef2fa" letter-spacing="6">MOUSE</text>
+  <rect x="566" y="132" width="148" height="4" rx="2" fill="#f0c02a"/>
+  <text x="640" y="176" text-anchor="middle" font-size="26" fill="#9fb0cc">Play with the mouse — like play.tetris.com</text>
+
+  <!-- ===== mouse illustration (centred ~x=640) ===== -->
+  <g>
+    <!-- cable -->
+    <path d="M640 300 C 640 250, 600 220, 560 210" fill="none" stroke="#3a465e" stroke-width="8" stroke-linecap="round"/>
+    <!-- body -->
+    <path d="M640 300
+             C 520 300, 486 380, 486 500
+             L 486 610
+             C 486 712, 560 760, 640 760
+             C 720 760, 794 712, 794 610
+             L 794 500
+             C 794 380, 760 300, 640 300 Z"
+          fill="url(#mouseBody)" stroke="#55647f" stroke-width="3"/>
+    <!-- button seam -->
+    <path d="M640 300 L 640 470" stroke="#55647f" stroke-width="3"/>
+    <path d="M500 470 C 560 452, 720 452, 780 470" fill="none" stroke="#55647f" stroke-width="3"/>
+    <!-- left / right button faces -->
+    <path d="M640 306 C 548 308, 512 372, 505 462 C 560 446, 618 442, 640 442 Z" fill="#ffffff" fill-opacity="0.05"/>
+    <path d="M640 306 C 732 308, 768 372, 775 462 C 720 446, 662 442, 640 442 Z" fill="#ffffff" fill-opacity="0.03"/>
+    <!-- scroll wheel -->
+    <rect x="628" y="330" width="24" height="86" rx="12" fill="#6a7c99"/>
+    <rect x="636" y="346" width="8" height="54" rx="4" fill="#242c3c"/>
+  </g>
+
+  <!-- ===== motion arrow under the mouse ===== -->
+  <g stroke="#f0c02a" stroke-width="5" fill="#f0c02a">
+    <line x1="410" y1="806" x2="870" y2="806"/>
+    <path d="M410 806 l 34 -18 l 0 36 Z"/>
+    <path d="M870 806 l -34 -18 l 0 36 Z"/>
+  </g>
+  <text x="640" y="866" text-anchor="middle" font-size="30" font-weight="700" fill="#eef2fa">MOVE  =  AIM</text>
+  <text x="640" y="902" text-anchor="middle" font-size="23" fill="#9fb0cc">the ghost snaps to the best rotation &amp; landing</text>
+
+  <!-- ===== call-outs ===== -->
+  <!-- left-click -->
+  <g stroke="#5c6b86" stroke-width="2" fill="none">
+    <path d="M300 360 L 470 400"/>
+  </g>
+  <circle cx="470" cy="400" r="5" fill="#5c6b86"/>
+  <text x="120" y="352" font-size="30" font-weight="700" fill="#eef2fa">Left-click</text>
+  <text x="120" y="388" font-size="24" fill="#9fb0cc">Hard drop</text>
+
+  <!-- right-click -->
+  <g stroke="#5c6b86" stroke-width="2" fill="none">
+    <path d="M980 360 L 810 400"/>
+  </g>
+  <circle cx="810" cy="400" r="5" fill="#5c6b86"/>
+  <text x="1160" y="352" text-anchor="end" font-size="30" font-weight="700" fill="#eef2fa">Right-click</text>
+  <text x="1160" y="388" text-anchor="end" font-size="24" fill="#9fb0cc">Hold piece</text>
+
+  <!-- scroll wheel -->
+  <g stroke="#5c6b86" stroke-width="2" fill="none">
+    <path d="M980 560 C 850 560, 760 470, 654 396"/>
+  </g>
+  <circle cx="654" cy="396" r="5" fill="#5c6b86"/>
+  <text x="1160" y="556" text-anchor="end" font-size="30" font-weight="700" fill="#eef2fa">Scroll wheel</text>
+  <text x="1160" y="592" text-anchor="end" font-size="24" fill="#9fb0cc">Rotate the piece</text>
+
+  <!-- move (left side, lower) -->
+  <g stroke="#5c6b86" stroke-width="2" fill="none">
+    <path d="M300 560 L 486 560"/>
+  </g>
+  <circle cx="486" cy="560" r="5" fill="#5c6b86"/>
+  <text x="120" y="556" font-size="30" font-weight="700" fill="#eef2fa">Move L / R</text>
+  <text x="120" y="592" font-size="24" fill="#9fb0cc">Slide the piece across</text>
+</svg>

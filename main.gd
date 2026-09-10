@@ -73,6 +73,7 @@ func _ready() -> void:
 	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
 	_build()
 	_state = State.START
+	_ui.set_help_context(_detect_touch())
 	_ui.show_splash()
 	if _detect_touch():
 		_enter_touch_mode()
@@ -250,6 +251,8 @@ func _enter_touch_mode() -> void:
 	_touch_mode = true
 	_mouse_control = false
 	_mouse_active = false
+	if _ui:
+		_ui.set_help_context(true)
 
 
 # --- state --------------------------------------------------------------

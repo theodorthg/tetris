@@ -20,6 +20,24 @@ enum Screen { NONE, SPLASH, START, PAUSE, SETTINGS, SOUND, HELP, GAMEOVER }
 
 const SPLASH_TIME := 2.6
 
+## Image-based How-to-Play. Two page sets — the mouse/keyboard set on desktop,
+## the touch set on a touchscreen. Missing images fall back to a text placeholder.
+const HELP_DIR := "res://assets/graphics/help/"
+const HELP_MOUSE := [
+	{"file": "m1-aim.png",      "title": "Aim & auto-rotate"},
+	{"file": "m2-mouse.png",    "title": "Mouse controls"},
+	{"file": "s-hud.png",       "title": "HUD buttons"},
+	{"file": "m4-keyboard.png", "title": "Keyboard"},
+	{"file": "s-goal.png",      "title": "Goal"},
+]
+const HELP_TOUCH := [
+	{"file": "t1-aim.png",   "title": "Aim & auto-rotate"},
+	{"file": "t2-swipe.png", "title": "Swipe & tap"},
+	{"file": "s-hud.png",    "title": "HUD buttons"},
+	{"file": "s-goal.png",   "title": "Goal"},
+]
+const HELP_SWIPE_MIN := 60.0
+
 var settings := {
 	"start_level": 1,
 	"ghost": true,
@@ -39,6 +57,15 @@ var _panel: PanelContainer
 var _panel_style: StyleBoxFlat
 var _splash_bar: ProgressBar
 var _splash_tween: Tween
+
+var _help_touch := false
+var _help_page := 0
+var _help_overlay: Control
+var _help_tex: TextureRect
+var _help_ph: Label
+var _help_dots: HBoxContainer
+var _help_swipe_id := -1
+var _help_swipe_x := 0.0
 
 
 func _ready() -> void:
@@ -102,6 +129,10 @@ func _ready() -> void:
 func hide_all() -> void:
 	_screen = Screen.NONE
 	visible = false
+	if _help_overlay:
+		_help_overlay.queue_free()
+		_help_overlay = null
+	_help_swipe_id = -1
 
 
 var _splash_overlay: Control
@@ -181,6 +212,37 @@ func _unhandled_input(event: InputEvent) -> void:
 		if go:
 			_finish_splash()
 			get_viewport().set_input_as_handled()
+		return
+
+	if _screen == Screen.HELP:
+		_help_input(event)
+
+
+func _help_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		match event.keycode:
+			KEY_LEFT, KEY_A:
+				_help_go(-1); get_viewport().set_input_as_handled()
+			KEY_RIGHT, KEY_D:
+				_help_go(1); get_viewport().set_input_as_handled()
+			KEY_SPACE, KEY_ESCAPE:
+				_help_close(); get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_WHEEL_DOWN, MOUSE_BUTTON_WHEEL_RIGHT:
+				_help_go(1); get_viewport().set_input_as_handled()
+			MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_LEFT:
+				_help_go(-1); get_viewport().set_input_as_handled()
+	elif event is InputEventScreenTouch:
+		if event.pressed:
+			_help_swipe_id = event.index
+			_help_swipe_x = event.position.x
+		elif event.index == _help_swipe_id:
+			_help_swipe_id = -1
+			var dx: float = event.position.x - _help_swipe_x
+			if absf(dx) > HELP_SWIPE_MIN:
+				_help_go(-1 if dx > 0.0 else 1)   # swipe right -> previous page
+				get_viewport().set_input_as_handled()
 
 
 func show_start() -> void:
@@ -199,6 +261,148 @@ func show_pause() -> void:
 func show_help(from: int = Screen.START) -> void:
 	_return_to = from
 	_screen = Screen.HELP
+	_help_page = 0
+	visible = true
+	_clear_box()
+	_panel.visible = false
+	_bg.visible = false
+	_backdrop.visible = true
+	_backdrop.color = Color(0.05, 0.06, 0.09, 1.0)
+	_scrim.visible = false
+	if _splash_overlay:
+		_splash_overlay.queue_free()
+		_splash_overlay = null
+	_build_help_overlay()
+	_help_go(0)
+
+
+## main.gd calls this so the right page set (mouse vs touch) is shown.
+func set_help_context(touch: bool) -> void:
+	_help_touch = touch
+
+
+func _help_pages() -> Array:
+	return HELP_TOUCH if _help_touch else HELP_MOUSE
+
+
+func _build_help_overlay() -> void:
+	if _help_overlay:
+		_help_overlay.queue_free()
+	_help_overlay = Control.new()
+	_help_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# IGNORE so the mouse wheel reaches _unhandled_input; the nav buttons keep
+	# their own hit test, and stray clicks fall through to a non-playing main.gd.
+	_help_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_help_overlay)
+
+	_help_tex = TextureRect.new()
+	_help_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_help_tex.offset_left = 10
+	_help_tex.offset_right = -10
+	_help_tex.offset_top = 10
+	_help_tex.offset_bottom = -120
+	_help_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_help_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_help_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_help_overlay.add_child(_help_tex)
+
+	_help_ph = Label.new()
+	_help_ph.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_help_ph.offset_bottom = -120
+	_help_ph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_help_ph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_help_ph.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_help_ph.add_theme_font_size_override("font_size", 20)
+	_help_ph.add_theme_color_override("font_color", Color(0.7, 0.78, 0.92))
+	_help_ph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_help_overlay.add_child(_help_ph)
+
+	var bottom := VBoxContainer.new()
+	bottom.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	bottom.offset_top = -112
+	bottom.offset_bottom = -14
+	bottom.offset_left = 16
+	bottom.offset_right = -16
+	bottom.add_theme_constant_override("separation", 12)
+	bottom.alignment = BoxContainer.ALIGNMENT_END
+	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_help_overlay.add_child(bottom)
+
+	_help_dots = HBoxContainer.new()
+	_help_dots.add_theme_constant_override("separation", 8)
+	_help_dots.alignment = BoxContainer.ALIGNMENT_CENTER
+	_help_dots.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_help_dots.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bottom.add_child(_help_dots)
+
+	var bar := HBoxContainer.new()
+	bar.add_theme_constant_override("separation", 14)
+	bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bottom.add_child(bar)
+	var prev := _nav_button("‹", Vector2(88, 58))
+	prev.pressed.connect(func(): _help_go(-1))
+	var done := _nav_button("Done", Vector2(132, 58))
+	done.pressed.connect(_help_close)
+	var next := _nav_button("›", Vector2(88, 58))
+	next.pressed.connect(func(): _help_go(1))
+	bar.add_child(prev)
+	bar.add_child(done)
+	bar.add_child(next)
+
+
+func _nav_button(text: String, min_size: Vector2) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = min_size
+	b.add_theme_font_size_override("font_size", 22 if text == "Done" else 30)
+	for state in ["normal", "hover", "pressed"]:
+		var sb := StyleBoxFlat.new()
+		var a: float = {"normal": 0.18, "hover": 0.28, "pressed": 0.12}[state]
+		sb.bg_color = Color(0.30, 0.42, 0.62, a)
+		sb.set_corner_radius_all(8)
+		if state == "hover":
+			sb.border_color = Color(0.6, 0.75, 1.0, 0.5)
+			sb.set_border_width_all(1)
+		b.add_theme_stylebox_override(state, sb)
+	return b
+
+
+func _help_go(delta: int) -> void:
+	var pages := _help_pages()
+	if pages.is_empty():
+		return
+	_help_page = wrapi(_help_page + delta, 0, pages.size())
+	var entry: Dictionary = pages[_help_page]
+	var path: String = HELP_DIR + str(entry.get("file", ""))
+	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	_help_tex.texture = tex
+	_help_tex.visible = tex != null
+	_help_ph.visible = tex == null
+	_help_ph.text = "%s\n\n( illustration coming )" % str(entry.get("title", ""))
+	_refresh_help_dots()
+
+
+func _refresh_help_dots() -> void:
+	for c in _help_dots.get_children():
+		c.queue_free()
+	var n := _help_pages().size()
+	for i in n:
+		var d := ColorRect.new()
+		d.custom_minimum_size = Vector2(9, 9)
+		d.color = Color(0.95, 0.80, 0.25) if i == _help_page else Color(1, 1, 1, 0.22)
+		d.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_help_dots.add_child(d)
+
+
+func _help_close() -> void:
+	if _help_overlay:
+		_help_overlay.queue_free()
+		_help_overlay = null
+	_help_swipe_id = -1
+	_scrim.visible = true
+	_screen = _return_to
 	_build()
 
 
@@ -225,7 +429,10 @@ func is_open() -> bool:
 ## Esc / pause key while a screen is up. Returns true if it was consumed.
 func handle_back() -> bool:
 	match _screen:
-		Screen.SETTINGS, Screen.HELP:
+		Screen.HELP:
+			_help_close()
+			return true
+		Screen.SETTINGS:
 			_screen = _return_to
 			_build()
 			return true
@@ -253,10 +460,14 @@ func _build() -> void:
 	if _splash_overlay:
 		_splash_overlay.queue_free()
 		_splash_overlay = null
+	if _help_overlay:
+		_help_overlay.queue_free()
+		_help_overlay = null
 	var splash_screens := [Screen.START, Screen.GAMEOVER]
 	_bg.visible = _screen in splash_screens
 	_backdrop.visible = _bg.visible
 	_bg.modulate = Color(0.6, 0.6, 0.66)
+	_scrim.visible = true
 	_scrim.color = Color(0.035, 0.045, 0.065, 0.74)
 	_panel_style.bg_color = Color(0.06, 0.07, 0.10, 0.92)
 	_panel_style.border_color = Color(1, 1, 1, 0.10)
@@ -277,8 +488,6 @@ func _build() -> void:
 			_button("How to Play", func(): show_help(Screen.PAUSE))
 			_button("Restart", restart_pressed.emit)
 			_exit_button()
-		Screen.HELP:
-			_help_screen()
 		Screen.SETTINGS:
 			_settings_screen()
 		Screen.SOUND:
@@ -337,39 +546,6 @@ func _commit_name(name: String) -> void:
 	_save_hof()
 	_screen = Screen.GAMEOVER
 	_build()
-
-
-func _help_screen() -> void:
-	_title("How to Play", 30)
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(372, 240)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_box.add_child(scroll)
-	var body := Label.new()
-	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.add_theme_font_size_override("font_size", 14)
-	body.custom_minimum_size = Vector2(360, 0)
-	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.text = _help_text()
-	scroll.add_child(body)
-	_gap(6)
-	_button("Back", func(): handle_back())
-
-
-func _help_text() -> String:
-	# Placeholder — final wording is written once the game is done.
-	return "Clear lines by filling every cell in a row.\n\n" \
-		+ "Keyboard:\n" \
-		+ "  Move: Arrows or A / D\n" \
-		+ "  Rotate: Up / X (cw), Z (ccw)\n" \
-		+ "  Soft drop: Down / S\n" \
-		+ "  Hard drop: Space\n" \
-		+ "  Hold: C / End\n" \
-		+ "  Pause: Esc / P\n\n" \
-		+ "Mouse:\n" \
-		+ "  Move left/right to aim the column; the ghost shows the best fit.\n" \
-		+ "  Wheel: force a rotation. Left-click: hard drop. Right-click: hold.\n\n" \
-		+ "(This text is a placeholder and will be finalised later.)"
 
 
 func _settings_screen() -> void:

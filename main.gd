@@ -128,27 +128,38 @@ func _layout() -> void:
 	_field.position = Vector2(wx, wy)
 	_field.queue_redraw()
 
-	# HUD band: hug the board (so a wide window doesn't fling the buttons to the
-	# screen edges), but never narrower than needed for the text, and clamped
-	# on-screen. Sits just above the board — moved down with it when the board is
-	# vertically centred on a wide screen.
-	var hud_w := clampf(maxf(board_w, 300.0), 0.0, area_w)
-	var hud_x := clampf(wx + board_w * 0.5 - hud_w * 0.5, area_x, area_x + area_w - hud_w)
+	# HUD band, sitting just above the board (moved down with it when the board is
+	# vertically centred on a wide screen).
 	var hud_y := maxf(hud_top, wy - HUD_H)
 	var pb := HUD_BTN
+	var box := Vector2(52, 40)
+
+	# The two icon buttons and their preview boxes hug the board but sit ~15 px
+	# past each board edge, so a wide window doesn't fling them to the screen
+	# edges yet they still clear the centred LEVEL / LINES text. Each button is
+	# centred exactly over its box. Clamped on-screen — on a phone the board
+	# already fills the width, so the group lands flush at the edges.
+	var out := 15.0
+	var span := minf(board_w + 2.0 * out, area_w)
+	var gx := clampf(wx + board_w * 0.5 - span * 0.5, area_x, area_x + area_w - span)
+	var left_cx := gx + pb * 0.5
+	var right_cx := gx + span - pb * 0.5
+
 	_hold_btn.size = Vector2(pb, pb)
-	_hold_btn.position = Vector2(hud_x - 4, hud_y)
+	_hold_btn.position = Vector2(left_cx - pb * 0.5, hud_y)
 	_pause_btn.size = Vector2(pb, pb)
-	_pause_btn.position = Vector2(hud_x + hud_w - pb + 4, hud_y)
-	var sx := hud_x + hud_w * 0.5
+	_pause_btn.position = Vector2(right_cx - pb * 0.5, hud_y)
+	_hold_box = Rect2(left_cx - box.x * 0.5, hud_y + pb - 2, box.x, box.y)
+	_next_box = Rect2(right_cx - box.x * 0.5, hud_y + pb - 2, box.x, box.y)
+
+	# Score / level / lines stay centred on the board itself.
+	var sx := wx + board_w * 0.5
 	_score_label.position = Vector2(sx - 150, hud_y + 4)
 	_score_label.size = Vector2(300, 36)
-	_level_label.position = Vector2(sx - 148, hud_y + 46)
-	_level_label.size = Vector2(140, 20)
+	_level_label.position = Vector2(sx - 146, hud_y + 46)
+	_level_label.size = Vector2(138, 20)
 	_lines_label.position = Vector2(sx + 8, hud_y + 46)
-	_lines_label.size = Vector2(140, 20)
-	_hold_box = Rect2(hud_x + (pb - 52) * 0.5, hud_y + pb - 2, 52, 40)
-	_next_box = Rect2(hud_x + hud_w - pb + (pb - 52) * 0.5, hud_y + pb - 2, 52, 40)
+	_lines_label.size = Vector2(138, 20)
 	queue_redraw()
 
 

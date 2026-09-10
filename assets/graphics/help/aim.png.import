@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c4fulxr1p7ni1"
-path="res://.godot/imported/aim-mouse.png-dfa7513c6adbbcdb52d505d940c6b65c.ctex"
+uid="uid://cjx3mrvfbyoo4"
+path="res://.godot/imported/aim.png-205492a61affcf57ff7191e5827045c2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/graphics/help/aim-mouse.png"
-dest_files=["res://.godot/imported/aim-mouse.png-dfa7513c6adbbcdb52d505d940c6b65c.ctex"]
+source_file="res://assets/graphics/help/aim.png"
+dest_files=["res://.godot/imported/aim.png-205492a61affcf57ff7191e5827045c2.ctex"]
 
 [params]
 

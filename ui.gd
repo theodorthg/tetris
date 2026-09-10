@@ -21,20 +21,22 @@ enum Screen { NONE, SPLASH, START, PAUSE, SETTINGS, SOUND, HELP, GAMEOVER }
 const SPLASH_TIME := 2.6
 
 ## Image-based How-to-Play. Two page sets — the mouse/keyboard set on desktop,
-## the touch set on a touchscreen. Missing images fall back to a text placeholder.
-const HELP_DIR := "res://assets/graphics/help/"
+## the touch set on a touchscreen. `tex` is preload()ed so exported builds pack
+## it reliably (a runtime load() of an imported PNG can miss on native exports);
+## null pages show a text placeholder until their art lands.
+const HELP_AIM := preload("res://assets/graphics/help/aim.png")
 const HELP_MOUSE := [
-	{"file": "mouse.png",     "title": "Mouse controls"},
-	{"file": "aim-mouse.png", "title": "Aim & auto-rotate"},
-	{"file": "hud.png",       "title": "HUD buttons"},
-	{"file": "keyboard.png",  "title": "Keyboard"},
-	{"file": "goal.png",      "title": "Goal"},
+	{"tex": preload("res://assets/graphics/help/mouse.png"), "title": "Mouse controls"},
+	{"tex": HELP_AIM, "title": "Aim & auto-rotate"},
+	{"tex": null, "title": "HUD buttons"},
+	{"tex": null, "title": "Keyboard"},
+	{"tex": null, "title": "Goal"},
 ]
 const HELP_TOUCH := [
-	{"file": "swipe.png",     "title": "Swipe & tap"},
-	{"file": "aim-touch.png", "title": "Aim & auto-rotate"},
-	{"file": "hud.png",       "title": "HUD buttons"},
-	{"file": "goal.png",      "title": "Goal"},
+	{"tex": null, "title": "Swipe & tap"},
+	{"tex": HELP_AIM, "title": "Aim & auto-rotate"},
+	{"tex": null, "title": "HUD buttons"},
+	{"tex": null, "title": "Goal"},
 ]
 const HELP_SWIPE_MIN := 60.0
 
@@ -380,8 +382,7 @@ func _help_go(delta: int) -> void:
 		return
 	_help_page = wrapi(_help_page + delta, 0, pages.size())
 	var entry: Dictionary = pages[_help_page]
-	var path: String = HELP_DIR + str(entry.get("file", ""))
-	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	var tex: Texture2D = entry.get("tex")
 	_help_tex.texture = tex
 	_help_tex.visible = tex != null
 	_help_ph.visible = tex == null
@@ -510,6 +511,8 @@ func _game_over_screen() -> void:
 	_hall_of_fame_list(int(r.get("score", 0)))
 	_gap(10)
 	_button("Play Again", restart_pressed.emit)
+	_button("How to Play", func(): show_help(Screen.GAMEOVER))
+	_button("Settings", func(): show_settings(Screen.GAMEOVER))
 	_exit_button()
 
 

@@ -19,6 +19,11 @@ In-page toolbar:
                     screenshot) without affecting the others; uncheck the box
                     to make images obey the same collapse/reading rules as
                     everything else
+  * Show example code (unchecked by default) - Reading mode normally hides
+                    every fenced code block Claude writes directly in its own
+                    prose (a solution snippet, not a diff or tool output);
+                    checking this reveals all of them, or click one such
+                    block's own header to reveal just that one
   * Toggle light / dark
   * Export to PDF - opens the browser print dialog ("Save as PDF"); the left
                     table of contents prints as a clickable index and anything
@@ -175,7 +180,12 @@ def _split_row(line: str) -> list[str]:
 _BLOCK_START = re.compile(r"^\s*(```|#{1,6}\s|[-*+]\s|\d+[.)]\s|>)")
 
 
-def md_to_html(text: str) -> str:
+def md_to_html(text: str, mark_code: bool = False) -> str:
+    """`mark_code` wraps fenced code blocks as a `doc-code` fold — Claude's own
+    example/solution snippets written directly in its prose, as opposed to a
+    tool diff or tool output. Only meaningful for assistant text (see the
+    `mark_code=` call sites in `render_blocks`); see the `doc-code` CSS for
+    how "Show example code" / Reading mode use the tag."""
     lines = (text or "").split("\n")
     out: list[str] = []
     i, n = 0, len(lines)
@@ -193,9 +203,10 @@ def md_to_html(text: str) -> str:
                 i += 1
             i += 1
             code = html.escape("\n".join(buf), quote=False)
-            out.append(
-                f'<pre><code class="language-{html.escape(lang)}">{code}</code></pre>'
-            )
+            pre_html = f'<pre><code class="language-{html.escape(lang)}">{code}</code></pre>'
+            if mark_code:
+                pre_html = fold("&#128187; example code", pre_html, "doc_code", "doc-code")
+            out.append(pre_html)
             continue
 
         if not line.strip():
@@ -241,7 +252,7 @@ def md_to_html(text: str) -> str:
             while i < n and lines[i].lstrip().startswith(">"):
                 buf.append(re.sub(r"^\s*>\s?", "", lines[i]))
                 i += 1
-            out.append(f"<blockquote>{md_to_html(chr(10).join(buf))}</blockquote>")
+            out.append(f"<blockquote>{md_to_html(chr(10).join(buf), mark_code)}</blockquote>")
             continue
 
         m = re.match(r"^(\s*)([-*+]|\d+[.)])\s+(.*)$", line)
@@ -356,17 +367,17 @@ def render_tool_result(blk: dict, max_result: int) -> str:
     )
 
 
-def render_blocks(content, max_result: int) -> list[tuple[str, str]]:
+def render_blocks(content, max_result: int, mark_code: bool = False) -> list[tuple[str, str]]:
     parts: list[tuple[str, str]] = []
     if isinstance(content, str):
-        return [("text", md_to_html(content))]
+        return [("text", md_to_html(content, mark_code))]
     for blk in content or []:
         if not isinstance(blk, dict):
-            parts.append(("text", md_to_html(str(blk))))
+            parts.append(("text", md_to_html(str(blk), mark_code)))
             continue
         t = blk.get("type")
         if t == "text":
-            parts.append(("text", md_to_html(blk.get("text", ""))))
+            parts.append(("text", md_to_html(blk.get("text", ""), mark_code)))
         elif t == "thinking":
             parts.append(
                 ("thinking", fold("&#128173; thinking",
@@ -492,7 +503,7 @@ def build_turns(events, *, drop_meta: bool, max_result: int, redact_commands: bo
         elif redacting:
             continue  # assistant/tool turn inside a redacted command's response
 
-        blocks = render_blocks(content, max_result)
+        blocks = render_blocks(content, max_result, mark_code=(role == "assistant"))
         if not blocks:
             continue
 
@@ -648,6 +659,33 @@ body.imgs-strict .fold.has-img.open>.fold-h::before{content:"\\25BE  "}
 body.imgs-strict.reading .fold[data-kind="tool_result"],
 body.imgs-strict.reading .turn.tool{display:none}
 
+/* Claude's own example/solution code fences (written directly in its prose,
+   not a tool diff/output) — outside Reading mode these render exactly like
+   plain Markdown code, no extra chrome at all (the fold header stays hidden). */
+.fold.doc-code>.fold-h{display:none}
+.fold.doc-code>.fold-c{display:block;border-top:0;padding:0}
+.fold.doc-code>.fold-c>pre{margin:.7em 0}
+
+/* Reading mode, "Show example code" unchecked (default): hidden — code
+   examples are common enough that showing them all by default would defeat
+   the point of Reading mode, unlike the rare has-img case. Individually
+   revealable per block via the ordinary .open mechanism (same one used by
+   every other fold/"Expand all tools"), so a manual reveal survives toggling
+   the checkbox later — exactly like a single has-img fold's state survives
+   toggling "Always show images". */
+body.reading .fold.doc-code>.fold-h{display:block}
+body.reading .fold.doc-code>.fold-c{display:none}
+body.reading .fold.doc-code.open>.fold-c{display:block}
+body.reading .fold.doc-code.open>.fold-h::before{content:"\\25BE  "}
+
+/* "Show example code" checked: default flips to shown; a click on one then
+   hides just that one via .code-hidden (independent of .open, mirroring
+   .img-hidden vs imgs-strict). */
+body.reading.code-show .fold.doc-code>.fold-c{display:block}
+body.reading.code-show .fold.doc-code>.fold-h::before{content:"\\25BE  "}
+body.reading.code-show .fold.doc-code.code-hidden>.fold-c{display:none}
+body.reading.code-show .fold.doc-code.code-hidden>.fold-h::before{content:"\\25B8  "}
+
 /* ---- print / PDF ---- */
 @media print{
   :root{
@@ -699,7 +737,11 @@ function toggleFold(el){
   // is switched off, in which case they behave like any other fold again.
   if(el.classList.contains('has-img') && !document.body.classList.contains('imgs-strict')){
     el.classList.toggle('img-hidden');
+  } else if(el.classList.contains('doc-code') && document.body.classList.contains('code-show')){
+    el.classList.toggle('code-hidden');
   } else {
+    // plain folds, has-img under imgs-strict, AND doc-code with the checkbox
+    // unchecked (its default-hidden state reuses the ordinary open mechanism)
     el.classList.toggle('open');
   }
 }
@@ -729,6 +771,11 @@ if(br) br.onclick = function(){
 var bi = document.getElementById('imgs');
 if(bi) bi.onchange = function(){
   document.body.classList.toggle('imgs-strict', !bi.checked);
+};
+
+var bcode = document.getElementById('code');
+if(bcode) bcode.onchange = function(){
+  document.body.classList.toggle('code-show', bcode.checked);
 };
 
 var bt = document.getElementById('theme');
@@ -809,6 +856,9 @@ def render_page(turns, *, title: str, source: str, session_id: str,
     <button id="reading" title="Hide every tool call, tool result and thinking block">Reading mode</button>
     <label class="imgs-toggle" title="Keep tool-result images visible even when their panel is collapsed or Reading mode is on. Click one image's own header to hide just that one (e.g. a blank/unwanted screenshot).">
       <input type="checkbox" id="imgs" checked> Always show images
+    </label>
+    <label class="imgs-toggle" title="Reading mode normally hides every fenced code block Claude writes directly in its own prose (a solution snippet, not a diff or tool output). Check this to reveal them all, or click one such block's own header to reveal just that one.">
+      <input type="checkbox" id="code"> Show example code
     </label>
     <button id="theme">Toggle light / dark</button>
     <button id="pdf" title="Opens the browser print dialog – choose &quot;Save as PDF&quot;. Whatever is hidden or collapsed now is left out of the PDF.">Export to PDF</button>

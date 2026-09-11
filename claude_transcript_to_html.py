@@ -47,6 +47,10 @@ Options
                          turns (see SENSITIVE_COMMANDS) — their output tends to
                          carry session/cost internals rather than project
                          discussion, so it's stripped by default.
+    --keep-emails        Don't mask email addresses anywhere on the page. They
+                         turn up unpredictably (a `git config` dump, a memory
+                         file, a passing remark) rather than in one fixable
+                         spot, so every address is masked by default.
 
 Only the Python standard library is required. Syntax highlighting is a
 progressive enhancement via highlight.js from a CDN; offline, code blocks simply
@@ -387,6 +391,12 @@ SENSITIVE_COMMANDS = {
     "explain-usage", "anthropic-skills:explain-usage",
 }
 _COMMAND_NAME_RE = re.compile(r"<command-name>/?([^<]+)</command-name>")
+
+# Email addresses show up unpredictably — a `git config` output, a memory file,
+# an aside in conversation — not from one fixable spot like the session ID or a
+# known command. Scrubbed globally from the finished page by default;
+# --keep-emails turns it off for a private copy.
+EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
 
 
 def _raw_text(content) -> str:
@@ -768,6 +778,10 @@ def main() -> int:
     ap.add_argument("--keep-diagnostic-commands", action="store_true",
                     help="don't redact /cost, /usage, /context, /explain-usage etc. turns "
                          "(see SENSITIVE_COMMANDS) — off by default")
+    ap.add_argument("--keep-emails", action="store_true",
+                    help="don't mask email addresses found anywhere in the page — off by "
+                         "default (they turn up unpredictably: a git config dump, a memory "
+                         "file, an aside in conversation, not just one fixable spot)")
     args = ap.parse_args()
 
     src: Path | None = args.transcript
@@ -802,6 +816,9 @@ def main() -> int:
     # occurrence instead.
     if session_id and not args.show_ids and session_id in page:
         page = page.replace(session_id, "session")
+
+    if not args.keep_emails:
+        page = EMAIL_RE.sub("[email hidden]", page)
 
     out = args.output or src.with_suffix(".html")
     out.write_text(page, encoding="utf-8")

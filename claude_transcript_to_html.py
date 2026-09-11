@@ -38,6 +38,15 @@ Options
                          0 = unlimited).
     --no-meta            Drop events flagged isMeta (Claude Code's injected notes).
     --light              Force the light colour scheme (default follows the OS).
+    --show-ids           Include the source filename and session UUID in the page
+                         header, and stop scrubbing that UUID everywhere else it
+                         shows up (e.g. this session's scratchpad path). Off by
+                         default so a shared/committed export doesn't carry it.
+    --keep-diagnostic-commands
+                         Don't redact /cost, /usage, /context, /explain-usage etc.
+                         turns (see SENSITIVE_COMMANDS) — their output tends to
+                         carry session/cost internals rather than project
+                         discussion, so it's stripped by default.
 
 Only the Python standard library is required. Syntax highlighting is a
 progressive enhancement via highlight.js from a CDN; offline, code blocks simply
@@ -369,6 +378,40 @@ def first_text_snippet(content) -> str:
     return (s[:90] + "…") if len(s) > 90 else s or "(no text)"
 
 
+# Slash commands whose output tends to carry things that don't belong in a
+# shared/committed transcript (session IDs, token/cost breakdowns, internal
+# plumbing) rather than actual project discussion. Redacted by default —
+# --keep-diagnostic-commands on the CLI turns this off.
+SENSITIVE_COMMANDS = {
+    "cost", "usage", "context", "status", "doctor",
+    "explain-usage", "anthropic-skills:explain-usage",
+}
+_COMMAND_NAME_RE = re.compile(r"<command-name>/?([^<]+)</command-name>")
+
+
+def _raw_text(content) -> str:
+    if isinstance(content, str):
+        return content
+    parts = []
+    for b in content or []:
+        if isinstance(b, dict) and b.get("type") == "text":
+            parts.append(b.get("text", ""))
+    return "\n".join(parts)
+
+
+def sensitive_command_name(content) -> str | None:
+    """The invoked command name if this user turn matches SENSITIVE_COMMANDS
+    (checked both as the full name and as the part after a skill namespace
+    ':'), else None."""
+    m = _COMMAND_NAME_RE.search(_raw_text(content))
+    if not m:
+        return None
+    name = m.group(1).strip().lower()
+    if name in SENSITIVE_COMMANDS or name.rsplit(":", 1)[-1] in SENSITIVE_COMMANDS:
+        return name
+    return None
+
+
 # --------------------------------------------------------------------------- #
 #  page assembly
 # --------------------------------------------------------------------------- #
@@ -379,11 +422,13 @@ ROLE_LABEL = {
     "tool": "Tool",
     "summary": "Context summary",
     "system": "System",
+    "redacted": "Redacted",
 }
 
 
-def build_turns(events, *, drop_meta: bool, max_result: int):
+def build_turns(events, *, drop_meta: bool, max_result: int, redact_commands: bool = True):
     turns = []
+    redacting = False  # inside a skipped /cost-style command-and-response window
     for ev in events:
         if drop_meta and ev.get("isMeta"):
             continue
@@ -403,6 +448,21 @@ def build_turns(events, *, drop_meta: bool, max_result: int):
             continue
         role = msg.get("role", et or "system")
         content = msg.get("content")
+
+        if role == "user":
+            cmd = sensitive_command_name(content) if redact_commands else None
+            if cmd:
+                redacting = True
+                turns.append(dict(
+                    role="redacted", ts=ts, side=False, no_prose=False,
+                    html=f"<p><em>— /{html.escape(cmd)} output omitted from this export —</em></p>",
+                    snippet=None,
+                ))
+                continue
+            redacting = False  # any other user turn ends a redaction window
+        elif redacting:
+            continue  # assistant/tool turn inside a redacted command's response
+
         blocks = render_blocks(content, max_result)
         if not blocks:
             continue
@@ -477,9 +537,11 @@ header.doc .meta{color:var(--muted);font-size:12.5px}
 .turn.assistant{border-left:3px solid var(--assistant)}
 .turn.tool{border-left:3px solid var(--tool);background:var(--panel2)}
 .turn.summary{border-left:3px solid var(--summary)}
+.turn.redacted{border-left:3px dashed var(--muted);opacity:.75}
 .turn .who{font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
 .turn.user .who{color:var(--user)} .turn.assistant .who{color:var(--assistant)}
 .turn.tool .who{color:var(--tool)} .turn.summary .who{color:var(--summary)}
+.turn.redacted .who{color:var(--muted)}
 .turn .when{color:var(--muted);font-size:11.5px;margin-left:8px;font-weight:400;text-transform:none;letter-spacing:0}
 .turn .sidechain{color:var(--accent);font-size:11px;margin-left:8px}
 .body{margin-top:8px}
@@ -607,7 +669,7 @@ if(bp) bp.onclick = function(){ window.print(); };
 
 
 def render_page(turns, *, title: str, source: str, session_id: str,
-                force_light: bool) -> str:
+                force_light: bool, show_ids: bool = False) -> str:
     nav_items = []
     body_parts = []
     q = 0
@@ -635,9 +697,15 @@ def render_page(turns, *, title: str, source: str, session_id: str,
         else "<nav><h2>Transcript</h2></nav>"
     )
     theme_attr = ' data-theme="light"' if force_light else ""
+    # The source filename and session id are internal identifiers (a stray
+    # UUID in an otherwise clean showcase doc) — off by default, --show-ids
+    # brings them back for personal debugging copies that never leave disk.
+    ids = (
+        f"{html.escape(source)} &middot; session {html.escape(session_id or 'n/a')} &middot; "
+        if show_ids else ""
+    )
     meta = (
-        f"{html.escape(source)} &middot; session {html.escape(session_id or 'n/a')} "
-        f"&middot; {len(turns)} entries &middot; generated "
+        f"{ids}{len(turns)} entries &middot; generated "
         f"{dt.datetime.now().strftime('%Y-%m-%d %H:%M')}"
     )
 
@@ -694,6 +762,12 @@ def main() -> int:
     ap.add_argument("--max-result", type=int, default=20000)
     ap.add_argument("--no-meta", action="store_true")
     ap.add_argument("--light", action="store_true")
+    ap.add_argument("--show-ids", action="store_true",
+                    help="include the source filename and session UUID in the page header "
+                         "(off by default — keeps that identifier out of a shared/committed export)")
+    ap.add_argument("--keep-diagnostic-commands", action="store_true",
+                    help="don't redact /cost, /usage, /context, /explain-usage etc. turns "
+                         "(see SENSITIVE_COMMANDS) — off by default")
     args = ap.parse_args()
 
     src: Path | None = args.transcript
@@ -715,10 +789,19 @@ def main() -> int:
             session_id = str(ev["sessionId"])
             break
 
-    turns = build_turns(events, drop_meta=args.no_meta, max_result=args.max_result)
-    title = args.title or f"Claude Code transcript — {src.stem}"
-    page = render_page(turns, title=title, source=src.name,
-                       session_id=session_id, force_light=args.light)
+    turns = build_turns(events, drop_meta=args.no_meta, max_result=args.max_result,
+                        redact_commands=not args.keep_diagnostic_commands)
+    title = args.title or "Claude Code transcript"
+    page = render_page(turns, title=title, source=src.name, session_id=session_id,
+                       force_light=args.light, show_ids=args.show_ids)
+
+    # Hiding session_id from the header isn't enough on its own — this session's
+    # own scratchpad dir (Claude's working-file convention) is named after the
+    # session UUID, so any Bash command that touched it embeds the raw ID in a
+    # tool call/result the header-only fix wouldn't catch. Scrub every literal
+    # occurrence instead.
+    if session_id and not args.show_ids and session_id in page:
+        page = page.replace(session_id, "session")
 
     out = args.output or src.with_suffix(".html")
     out.write_text(page, encoding="utf-8")

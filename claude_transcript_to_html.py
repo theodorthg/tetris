@@ -12,6 +12,11 @@ In-page toolbar:
   * Reading mode  - hides every tool call, tool result and thinking block (and
                     any Claude turn that was nothing but those), leaving the
                     plain conversation
+  * Always show images (checked by default) - a tool result that embedded a
+                    real image (e.g. Read on a screenshot) stays visible even
+                    with tools collapsed or Reading mode on; uncheck to make
+                    images obey the same collapse/reading rules as everything
+                    else
   * Toggle light / dark
   * Export to PDF - opens the browser print dialog ("Save as PDF"); the left
                     table of contents prints as a clickable index and anything
@@ -337,11 +342,15 @@ def render_tool_result(blk: dict, max_result: int) -> str:
     body = "".join(images)
     if text.strip():
         body += f"<pre>{html.escape(text, quote=False)}</pre>"
+    extra = "err" if is_err else ""
+    if images:
+        # exempted from "Collapse all" / Reading mode by default — see .has-img CSS
+        extra = (extra + " has-img").strip()
     return fold(
         f'{label} <span class="muted">({size_note})</span>',
         body,
         "tool_result",
-        "err" if is_err else "",
+        extra,
     )
 
 
@@ -490,6 +499,10 @@ def build_turns(events, *, drop_meta: bool, max_result: int, redact_commands: bo
         # an assistant turn that is only tool calls / thinking (no prose) -> can be
         # hidden entirely in "reading mode"
         no_prose = disp == "assistant" and not (kinds & {"text", "image"})
+        turn_html = "\n".join(h for _, h in blocks)
+        # a tool result that embedded a real image (e.g. Read on a screenshot) —
+        # exempted from "Collapse all" / Reading mode by default, see .has-img CSS
+        has_image = "<img " in turn_html
 
         turns.append(
             dict(
@@ -497,7 +510,8 @@ def build_turns(events, *, drop_meta: bool, max_result: int, redact_commands: bo
                 ts=ts,
                 side=side,
                 no_prose=no_prose,
-                html="\n".join(h for _, h in blocks),
+                has_image=has_image,
+                html=turn_html,
                 snippet=first_text_snippet(content) if disp == "user" else None,
             )
         )
@@ -550,6 +564,8 @@ header.doc .meta{color:var(--muted);font-size:12.5px}
   border-radius:6px;padding:5px 10px;font-size:12.5px;cursor:pointer}
 .toolbar button:hover{border-color:var(--accent)}
 .toolbar button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.imgs-toggle{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);
+  border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer}
 .turn{margin:18px 0;padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
 .turn.user{border-left:3px solid var(--user)}
 .turn.assistant{border-left:3px solid var(--assistant)}
@@ -603,12 +619,23 @@ header.doc .meta{color:var(--muted);font-size:12.5px}
   main{padding:18px 16px 100px}
 }
 
-/* Reading mode: drop every mechanical block (also affects the PDF). */
+/* Reading mode: drop every mechanical block (also affects the PDF) — except
+   a tool result that embedded a real image (e.g. Read on a screenshot); that
+   stays visible unless the "Always show images" checkbox is switched off. */
 body.reading .fold[data-kind="tool_use"],
-body.reading .fold[data-kind="tool_result"],
 body.reading .fold[data-kind="thinking"],
-body.reading .turn.tool,
+body.reading .fold[data-kind="tool_result"]:not(.has-img),
+body.reading .turn.tool:not(.has-img),
 body.reading .turn.assistant.no-prose{display:none}
+
+/* Collapse all: a fold with an image stays open regardless of its own .open
+   class, for the same reason. */
+.fold.has-img>.fold-c{display:block}
+
+/* "Always show images" switched off: images obey plain collapse/reading rules */
+body.imgs-strict .fold.has-img:not(.open)>.fold-c{display:none}
+body.imgs-strict.reading .fold[data-kind="tool_result"],
+body.imgs-strict.reading .turn.tool{display:none}
 
 /* ---- print / PDF ---- */
 @media print{
@@ -673,6 +700,11 @@ if(br) br.onclick = function(){
   br.textContent = on ? 'Reading mode: ON' : 'Reading mode';
 };
 
+var bi = document.getElementById('imgs');
+if(bi) bi.onchange = function(){
+  document.body.classList.toggle('imgs-strict', !bi.checked);
+};
+
 var bt = document.getElementById('theme');
 if(bt) bt.onclick = function(){
   var r = document.documentElement;
@@ -697,7 +729,8 @@ def render_page(turns, *, title: str, source: str, session_id: str,
         label = ROLE_LABEL.get(role, role.title())
         when = f'<span class="when">{html.escape(t["ts"])}</span>' if t["ts"] else ""
         side = '<span class="sidechain">subagent</span>' if t["side"] else ""
-        klass = f"turn {html.escape(role)}" + (" no-prose" if t.get("no_prose") else "")
+        klass = f"turn {html.escape(role)}" + (" no-prose" if t.get("no_prose") else "") \
+            + (" has-img" if t.get("has_image") else "")
         body_parts.append(
             f'<section class="{klass}" id="{anchor}">'
             f'<div class="who">{label}{when}{side}</div>'
@@ -748,6 +781,9 @@ def render_page(turns, *, title: str, source: str, session_id: str,
     <button id="exp">Expand all tools</button>
     <button id="col">Collapse all tools</button>
     <button id="reading" title="Hide every tool call, tool result and thinking block">Reading mode</button>
+    <label class="imgs-toggle" title="Keep tool-result images visible even when their panel is collapsed or Reading mode is on">
+      <input type="checkbox" id="imgs" checked> Always show images
+    </label>
     <button id="theme">Toggle light / dark</button>
     <button id="pdf" title="Opens the browser print dialog – choose &quot;Save as PDF&quot;. Whatever is hidden or collapsed now is left out of the PDF.">Export to PDF</button>
   </div>

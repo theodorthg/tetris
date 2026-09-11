@@ -27,3 +27,8 @@ templates.tpz
 # NOTE: the following ARE committed on purpose — Godot needs them:
 #   *.import, *.uid, export_presets.cfg, project.godot, assets/**
 
+
+# Claude Desktop auto-saves the live transcript here (session-UUID name); the
+# deliberate end-of-project "Claude Code transcript.pdf" is still committable.
+Claude Code transcript — *.pdf
+Claude Code transcript*.html

@@ -305,6 +305,7 @@ def render_tool_use(blk: dict) -> str:
 
 def render_tool_result(blk: dict, max_result: int) -> str:
     content = blk.get("content", "")
+    images: list[str] = []
     if isinstance(content, str):
         text = content
     elif isinstance(content, list):
@@ -314,7 +315,9 @@ def render_tool_result(blk: dict, max_result: int) -> str:
                 if x.get("type") == "text":
                     chunks.append(x.get("text", ""))
                 elif x.get("type") == "image":
-                    chunks.append("[image]")
+                    # e.g. Read on a screenshot — this is the actual image
+                    # data, not a stand-in; render it, don't stub it to text.
+                    images.append(render_image(x.get("source", {})))
                 else:
                     chunks.append(json.dumps(x, ensure_ascii=False))
             else:
@@ -329,9 +332,14 @@ def render_tool_result(blk: dict, max_result: int) -> str:
 
     is_err = bool(blk.get("is_error"))
     label = "&#9888; tool result (error)" if is_err else "&#128196; tool result"
+    size_note = f"{full_len} chars" if text.strip() else (
+        f"{len(images)} image{'s' if len(images) != 1 else ''}" if images else "0 chars")
+    body = "".join(images)
+    if text.strip():
+        body += f"<pre>{html.escape(text, quote=False)}</pre>"
     return fold(
-        f'{label} <span class="muted">({full_len} chars)</span>',
-        f"<pre>{html.escape(text, quote=False)}</pre>",
+        f'{label} <span class="muted">({size_note})</span>',
+        body,
         "tool_result",
         "err" if is_err else "",
     )

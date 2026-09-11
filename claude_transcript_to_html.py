@@ -14,9 +14,11 @@ In-page toolbar:
                     plain conversation
   * Always show images (checked by default) - a tool result that embedded a
                     real image (e.g. Read on a screenshot) stays visible even
-                    with tools collapsed or Reading mode on; uncheck to make
-                    images obey the same collapse/reading rules as everything
-                    else
+                    with tools collapsed or Reading mode on; click that one
+                    image's own header to hide just it (e.g. a blank/unwanted
+                    screenshot) without affecting the others; uncheck the box
+                    to make images obey the same collapse/reading rules as
+                    everything else
   * Toggle light / dark
   * Export to PDF - opens the browser print dialog ("Save as PDF"); the left
                     table of contents prints as a clickable index and anything
@@ -628,12 +630,21 @@ body.reading .fold[data-kind="tool_result"]:not(.has-img),
 body.reading .turn.tool:not(.has-img),
 body.reading .turn.assistant.no-prose{display:none}
 
-/* Collapse all: a fold with an image stays open regardless of its own .open
-   class, for the same reason. */
+/* Collapse all / Reading mode: a fold with an image stays open by default —
+   BUT a direct click on that one fold's header still hides that one image
+   (adds .img-hidden; independent of the generic .open class, so "Collapse
+   all"/Reading mode can't clobber a deliberate per-image click, and vice
+   versa). Blank/unwanted screenshots can be closed one at a time this way. */
 .fold.has-img>.fold-c{display:block}
+.fold.has-img.img-hidden>.fold-c{display:none}
+.fold.has-img>.fold-h::before{content:"\\25BE  "}
+.fold.has-img.img-hidden>.fold-h::before{content:"\\25B8  "}
 
-/* "Always show images" switched off: images obey plain collapse/reading rules */
+/* "Always show images" switched off: images obey plain collapse/reading rules
+   (click then toggles the normal .open class instead — see toggleFold()). */
 body.imgs-strict .fold.has-img:not(.open)>.fold-c{display:none}
+body.imgs-strict .fold.has-img:not(.open)>.fold-h::before{content:"\\25B8  "}
+body.imgs-strict .fold.has-img.open>.fold-h::before{content:"\\25BE  "}
 body.imgs-strict.reading .fold[data-kind="tool_result"],
 body.imgs-strict.reading .turn.tool{display:none}
 
@@ -676,7 +687,17 @@ PAGE_JS = """
 document.querySelectorAll('pre code').forEach(function(el){
   try{ if(window.hljs) hljs.highlightElement(el); }catch(e){}
 });
-function toggleFold(el){ if(el) el.classList.toggle('open'); }
+function toggleFold(el){
+  if(!el) return;
+  // has-img folds default open regardless of .open (see CSS) — a click hides
+  // just that one image via .img-hidden instead, unless "Always show images"
+  // is switched off, in which case they behave like any other fold again.
+  if(el.classList.contains('has-img') && !document.body.classList.contains('imgs-strict')){
+    el.classList.toggle('img-hidden');
+  } else {
+    el.classList.toggle('open');
+  }
+}
 document.addEventListener('click', function(e){
   var h = e.target.closest && e.target.closest('.fold-h');
   if(h) toggleFold(h.parentElement);
@@ -781,7 +802,7 @@ def render_page(turns, *, title: str, source: str, session_id: str,
     <button id="exp">Expand all tools</button>
     <button id="col">Collapse all tools</button>
     <button id="reading" title="Hide every tool call, tool result and thinking block">Reading mode</button>
-    <label class="imgs-toggle" title="Keep tool-result images visible even when their panel is collapsed or Reading mode is on">
+    <label class="imgs-toggle" title="Keep tool-result images visible even when their panel is collapsed or Reading mode is on. Click one image's own header to hide just that one (e.g. a blank/unwanted screenshot).">
       <input type="checkbox" id="imgs" checked> Always show images
     </label>
     <button id="theme">Toggle light / dark</button>

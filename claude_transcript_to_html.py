@@ -678,6 +678,11 @@ body.imgs-strict.reading .turn.tool{display:none}
   .body pre{white-space:pre-wrap;word-break:break-word;overflow:visible}
   .fold{break-inside:avoid}
   .fold-h{white-space:normal}
+  /* Cap oversized screenshots to well within one A4 page (~29.7cm, minus
+     margins) so a single huge image can't spill onto a mostly-blank next
+     page — the actual cause of "empty page after this image" in exports. */
+  .body img{max-width:15cm;max-height:20cm;width:auto;height:auto;
+    display:block;margin:6pt auto;page-break-inside:avoid;break-inside:avoid}
   a{color:var(--text);text-decoration:none}
   .body a{color:var(--accent)}
 }

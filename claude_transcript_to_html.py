@@ -24,6 +24,16 @@ In-page toolbar:
                     prose (a solution snippet, not a diff or tool output);
                     checking this reveals all of them, or click one such
                     block's own header to reveal just that one
+  * Per-turn hide - a small 👁 on every turn's header hides that one turn from
+                    view *and* from the PDF (it collapses to a one-line "—
+                    hidden, click to restore —" marker, click it to bring the
+                    turn back). Shift-click a 👁 to grab the whole range from
+                    the last turn you clicked to this one in one go — for
+                    curating a transcript down to just the parts relevant to
+                    a given reader (e.g. cutting an unrelated OS/driver
+                    detour) rather than a fixed rule like Reading mode — and
+                    independent of Reading mode/images/code above.
+                    "Show hidden turns" restores everything at once.
   * Toggle light / dark
   * Export to PDF - opens the browser print dialog ("Save as PDF"); the left
                     table of contents prints as a clickable index and anything
@@ -686,6 +696,23 @@ body.reading.code-show .fold.doc-code>.fold-h::before{content:"\\25BE  "}
 body.reading.code-show .fold.doc-code.code-hidden>.fold-c{display:none}
 body.reading.code-show .fold.doc-code.code-hidden>.fold-h::before{content:"\\25B8  "}
 
+/* Manual per-turn hide — independent of Reading mode/images/code: pick any
+   turn (or a whole range via shift-click) and drop it from view *and* from
+   the PDF export, for curating a transcript down to just the parts that
+   matter for a given audience (e.g. cutting out an OS/driver detour). The
+   turn collapses to a one-line marker on screen (so you don't lose track of
+   what's hidden and can restore it) but disappears completely when printed. */
+.turn .hide-toggle{float:right;cursor:pointer;opacity:.3;font-size:13px;
+  margin-left:8px;user-select:none}
+.turn .hide-toggle:hover{opacity:1}
+.turn .hide-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hidden-marker{display:none;cursor:pointer;color:var(--muted);font-size:12px;
+  padding:2px 0}
+.hidden-marker:hover{color:var(--text)}
+.turn.user-hidden{padding:6px 16px}
+.turn.user-hidden>.who,.turn.user-hidden>.body{display:none}
+.turn.user-hidden>.hidden-marker{display:block}
+
 /* ---- print / PDF ---- */
 @media print{
   :root{
@@ -695,6 +722,7 @@ body.reading.code-show .fold.doc-code.code-hidden>.fold-h::before{content:"\\25B
   }
   body{background:#fff}
   .toolbar,#top{display:none !important}
+  .turn.user-hidden{display:none !important}
   .wrap{display:block;max-width:none}
   nav{position:static;height:auto;overflow:visible;border:0;padding:0;
     page-break-after:always;break-after:page}
@@ -755,6 +783,55 @@ document.addEventListener('keydown', function(e){
     e.preventDefault(); toggleFold(e.target.parentElement);
   }
 });
+
+// Manual per-turn hide, with shift-click to grab a whole range at once (like
+// file-manager multi-select) — the range runs from the last turn you clicked
+// to this one, so hiding e.g. a 20-message detour is one shift-click, not 20.
+var _lastHideIdx = null;
+function setTurnHidden(idx, hidden){
+  var t = document.querySelector('.turn[data-idx="' + idx + '"]');
+  if(t) t.classList.toggle('user-hidden', hidden);
+}
+function toggleHiddenRange(idx, extend){
+  var current = document.querySelector('.turn[data-idx="' + idx + '"]');
+  if(!current) return;
+  var makeHidden = !current.classList.contains('user-hidden');
+  var lo = idx, hi = idx;
+  if(extend && _lastHideIdx !== null){
+    lo = Math.min(_lastHideIdx, idx);
+    hi = Math.max(_lastHideIdx, idx);
+  }
+  for(var i = lo; i <= hi; i++) setTurnHidden(i, makeHidden);
+  _lastHideIdx = idx;
+}
+document.addEventListener('click', function(e){
+  var h = e.target.closest && e.target.closest('.hide-toggle');
+  if(h){
+    e.stopPropagation();
+    toggleHiddenRange(parseInt(h.closest('.turn').dataset.idx, 10), e.shiftKey);
+    return;
+  }
+  var m = e.target.closest && e.target.closest('.hidden-marker');
+  if(m) toggleHiddenRange(parseInt(m.closest('.turn').dataset.idx, 10), false);
+});
+document.addEventListener('keydown', function(e){
+  if((e.key !== 'Enter' && e.key !== ' ') || !e.target.classList) return;
+  if(e.target.classList.contains('hide-toggle')){
+    e.preventDefault();
+    toggleHiddenRange(parseInt(e.target.closest('.turn').dataset.idx, 10), e.shiftKey);
+  } else if(e.target.classList.contains('hidden-marker')){
+    e.preventDefault();
+    toggleHiddenRange(parseInt(e.target.closest('.turn').dataset.idx, 10), false);
+  }
+});
+var bsh = document.getElementById('showhidden');
+if(bsh) bsh.onclick = function(){
+  document.querySelectorAll('.turn.user-hidden').forEach(function(t){
+    t.classList.remove('user-hidden');
+  });
+  _lastHideIdx = null;
+};
+
 function setAllFolds(open){
   document.querySelectorAll('.fold').forEach(function(d){ d.classList.toggle('open', open); });
 }
@@ -805,9 +882,16 @@ def render_page(turns, *, title: str, source: str, session_id: str,
         klass = f"turn {html.escape(role)}" + (" no-prose" if t.get("no_prose") else "") \
             + (" has-img" if t.get("has_image") else "")
         body_parts.append(
-            f'<section class="{klass}" id="{anchor}">'
-            f'<div class="who">{label}{when}{side}</div>'
-            f'<div class="body">{t["html"]}</div></section>'
+            f'<section class="{klass}" id="{anchor}" data-idx="{idx}">'
+            f'<div class="who">{label}{when}{side}'
+            f'<span class="hide-toggle" role="button" tabindex="0" '
+            f'title="Diesen Abschnitt hier (und in der PDF) ausblenden — '
+            f'Umschalt-Klick: ganzen Bereich seit dem zuletzt geklickten Abschnitt">'
+            f'&#128065;</span></div>'
+            f'<div class="body">{t["html"]}</div>'
+            f'<div class="hidden-marker" role="button" tabindex="0">'
+            f'&mdash; ausgeblendet (Abschnitt {idx + 1}) &mdash; klicken zum Wiedereinblenden &mdash;</div>'
+            f'</section>'
         )
         if role == "user" and t.get("snippet"):
             q += 1
@@ -860,6 +944,7 @@ def render_page(turns, *, title: str, source: str, session_id: str,
     <label class="imgs-toggle" title="Reading mode normally hides every fenced code block Claude writes directly in its own prose (a solution snippet, not a diff or tool output). Check this to reveal them all, or click one such block's own header to reveal just that one.">
       <input type="checkbox" id="code"> Show example code
     </label>
+    <button id="showhidden" title="Restore every turn you hid with the 👁 icon or a click on its own &quot;hidden&quot; marker. Doesn't touch Reading mode/images/code — this is for manually curating which turns exist at all.">Show hidden turns</button>
     <button id="theme">Toggle light / dark</button>
     <button id="pdf" title="Opens the browser print dialog – choose &quot;Save as PDF&quot;. Whatever is hidden or collapsed now is left out of the PDF.">Export to PDF</button>
   </div>

@@ -1,0 +1,35 @@
+digraph UML {
+  bgcolor="#0b0e1c";
+  rankdir=TB;
+  fontname="Helvetica";
+  splines=ortho;
+  node [shape=record, fontname="Helvetica", fontsize=11, color="#4db2ff", fontcolor="#eef4ff", style="filled,rounded", fillcolor="#161a30"];
+  edge [color="#6f7fa8", fontname="Helvetica", fontsize=10, fontcolor="#8fa3c8"];
+
+  Main [label="{Main (Node2D)\l|+ _state: START\|PLAYING\|PAUSED\|OVER\l+ _score, _lines, _level: int\l+ _das_dir, _mouse_active, _touch_mode\l|+ _start_game() / _pause() / _resume()\l+ _on_lines_cleared(rows, tspin)\l+ _fall_interval_for(level): float\l+ _unhandled_input(e) -\> DAS/ARR, Maus, Touch\l+ _mouse_update(pos) -\> field.aim(col)\l}"];
+
+  Playfield [label="{Playfield (Node2D)\l|+ _grid[20][10]: int (-1 = leer)\l+ _type, _rot, _pos, _hold\l+ fall_interval, ghost_enabled\l|+ move(dx) / rotate_piece(dir) / hard_drop()\l+ _rotated_state(type,rot,pos,dir): SRS-Kick\l+ suggest_placement(col): Dictionary (BFS)\l+ _lock_piece() -\> Line-Clear + T-Spin\l+ _tspin_corners(): int\l|signals: lines_cleared, piece_locked,\l  hold_changed, topped_out, piece_spawned\l}"];
+
+  Pieces [label="{Pieces (static, RefCounted)\l|+ CELLS[type][rot]: Vector2i×4\l+ KICKS[\"I\"\|\"main\"][from][to]: Vector2i[]\l+ COLORS[type], BOX[type], SPAWN_X[type]\l|+ kick_kind(type): String\l}"];
+
+  Ui [label="{Ui (CanvasLayer)\l|+ settings: Dictionary\l+ _hof: Array (Hall of Fame)\l|+ show_start() / show_pause() / show_settings()\l+ show_help(from) / _help_go(delta)\l+ show_game_over(result)\l|signals: play_pressed, resume_pressed,\l  restart_pressed, settings_changed(cfg)\l}"];
+
+  SoundManager [label="{SoundManager \"Snd\" (Autoload)\l|+ SOUNDS: Dictionary (name, file, def, base_db)\l+ SFX_ORDER: Array\l|+ play(key) / set_volume(key,pct) / get_volume(key)\l}"];
+
+  PauseButton [label="{PauseButton (Control)\l|signal tapped\l}"];
+  HoldButton [label="{HoldButton (Control)\l|signal tapped\l}"];
+
+  Main -> Playfield [label="besitzt", arrowhead=diamond];
+  Main -> Ui [label="besitzt", arrowhead=diamond];
+  Main -> PauseButton [label="besitzt", arrowhead=diamond];
+  Main -> HoldButton [label="besitzt", arrowhead=diamond];
+  Main -> SoundManager [label="Autoload /root/Snd", style=dashed];
+  Ui -> SoundManager [label="Autoload /root/Snd\n+ preload() für SOUNDS-Konstante", style=dashed];
+
+  Playfield -> Pieces [label="CELLS/KICKS/COLORS\n(rein lesend, static)"];
+  Playfield -> Main [label="lines_cleared -\>\n_on_lines_cleared()", style=dotted];
+  Ui -> Main [label="settings_changed -\>\n_on_settings_changed()", style=dotted];
+  PauseButton -> Main [label="tapped -\> _pause()", style=dotted];
+  HoldButton -> Main [label="tapped -\> field.hold()", style=dotted];
+  Main -> Playfield [label="move()/rotate_piece()/\nhard_drop()/aim(col)", style=dashed, color="#ff9d4d"];
+}

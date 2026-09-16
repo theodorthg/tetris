@@ -33,6 +33,51 @@ zeigen auf die drei Dateien statt auf `res://icon.svg`. `config/icon` selbst
 (Editor/Desktop-Fensterleiste/Web-Favicon) bleibt bewusst der Godot-Standard —
 nur der Android-Launcher bekam ein echtes Icon.
 
+## Architektur-Dossier (`docs/architecture-dossier/`, 2026-09-16)
+
+Technisches Dossier als druckbares Claude-Artifact, nach demselben Muster wie
+bei Galaga (siehe die globale CLAUDE.md, „Technische Dokumentation als
+Claude-Artifact (druckbar/PDF-fähig)", und `projects/galaga/docs/
+architecture-dossier/` als Referenz). Inhalt hier speziell für Tetris statt
+Galagas Formationen/Kollisionen: Steuerung (Tastatur DAS/ARR, Maus-Aim, Touch-
+Swipe), 7-Bag-Spawn + SRS-Rotation mit Wandkicks, Line-Clear-Erkennung +
+T-Spin, Ghost-Piece + die BFS-Maus-Platzierungssuche (`suggest_placement()`),
+Scoring/Leveling. `index.html` (Artifact-Quelle), `build_standalone.py`
+(Base64-Inline-Export für den PDF-Druck), `prepare_assets.py`
+(Diagramm-Regeneration), `diagrams/scenetree.dot`+`uml.dot` (Graphviz-Quellen).
+Vier echte Screenshots (`assets/fig-gameplay.png`, `fig-rebind.png`,
+`fig-aim.png`, `fig-goal.png`) — aus einem live laufenden, nicht-Editor
+`godot --path projects/tetris`-Fenster auf demselben X-Display der Session,
+gesteuert per `xdotool` (Mausklicks/-rad zum Stack-Aufbauen bzw. Hilfe-Blättern)
+und mit `import -window <id>` eingefangen, nicht per Skript reproduzierbar
+(siehe `prepare_assets.py`-Docstring).
+
+Bietet wie bei Galaga den „Dossier ⇄ Godot-Editor"-Farbumschalter für die
+Code-Panels, inklusive Druck-Unterstützung (Umschalter-Zustand bleibt auch im
+PDF erhalten, fällt nicht auf den Blueprint-Print-Look zurück).
+
+**Eigener Fund, über Galagas Stand hinaus**: die beiden Graphviz-Diagramme
+(Szenenbaum, UML) sind hier bewusst als **SVG** eingebettet, nicht als PNG wie
+bei Galaga. Grund: ein als PNG eingebettetes Diagramm (selbst nur ~60–160&nbsp;KB,
+mit reduziertem DPI/Farbpalette) hat reproduzierbar Chromes
+`--print-to-pdf`-Pipeline für das GESAMTE restliche Dokument kaputt gemacht —
+jeder `body.godot-syntax`-Print-Selektor (der Umschalter) wurde für JEDE Seite
+NACH dem PNG stillschweigend ignoriert, unabhängig von Spezifität/`!important`/
+Regel-Reihenfolge (per Bisektion bestätigt: mit Platzhalter-Bildchen statt der
+echten PNGs griff der Umschalter wieder; das Szenenbaum-Diagramm — vor dem
+Code-Modul im Dokument — war der eigentliche Übeltäter, das spät im Dokument
+sitzende UML-Diagramm war unschädlich, weil danach kein `.code`-Block mehr
+kommt). Als Graphviz-**SVG** (`dot -Tsvg`, ~14–17&nbsp;KB, verlustfrei skalierbar)
+tritt der Bug nicht auf. **Falls hier je wieder auf PNG zurückgewechselt
+werden soll: den Umschalter über das GANZE Dokument (nicht nur die erste
+Codezeile) neu gegenprüfen, `pdftoppm`-Sichtprüfung inklusive** — der Bug
+zeigt sich erst auf Folgeseiten, ein Blick auf Seite&nbsp;1 reicht nicht.
+
+Verifiziert wie bei Galaga per `google-chrome --headless --print-to-pdf`
+gegen die tatsächliche `Tetris-Architektur-Dossier.html` (nicht nur eine über
+`python3 -m http.server` servierte Rohdatei) + `pdftoppm`-Sichtprüfung aller
+19 Seiten, in BEIDEN Umschalter-Zuständen.
+
 ## Aufbau
 
 - Godot 4.7, fast alles im Code. Eine winzige `main.tscn` (nur `Main`/Node2D).

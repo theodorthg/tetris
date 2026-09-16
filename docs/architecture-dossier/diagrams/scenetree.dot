@@ -1,0 +1,48 @@
+digraph SceneTree {
+  bgcolor="#0b0e1c";
+  rankdir=TB;
+  fontname="Helvetica";
+  node [fontname="Helvetica", fontsize=13, color="#4db2ff", fontcolor="#eef4ff", style=filled];
+  edge [color="#6f7fa8", fontname="Helvetica", fontsize=11, fontcolor="#8fa3c8"];
+
+  subgraph cluster_static {
+    label="main.tscn (die EINZIGE fest verdrahtete Szene — nur ein Node)";
+    fontcolor="#4db2ff"; color="#2a3358"; style="rounded"; bgcolor="#121631";
+
+    Main [label="Main : Node2D\n(main.gd)\nState-Machine, Score/Level,\nInput-Routing, HUD-Zeichnung", fillcolor="#1b2140", shape=box];
+  }
+
+  subgraph cluster_code_built {
+    label="von Main._build() im Code erzeugt (add_child()) — kein .tscn dafür";
+    fontcolor="#ff9d4d"; color="#4a2f1a"; style="rounded"; bgcolor="#241a10";
+
+    Playfield [label="Playfield : Node2D\n(playfield.gd)\n_grid[20][10], aktiver Stein,\nGhost, BFS-Platzierungssuche", fillcolor="#2a1d10", shape=box];
+    ScoreLbl [label="Score/Level/Lines\n(Label ×3)", fillcolor="#241a10", shape=ellipse];
+    PauseButton [label="PauseButton : Control\n(pause_button.gd)", fillcolor="#2a1d10", shape=box];
+    HoldButton [label="HoldButton : Control\n(hold_button.gd)", fillcolor="#2a1d10", shape=box];
+    Ui [label="Ui : CanvasLayer\n(ui.gd)\nbaut ALLE Screens im Code:\nStart/Pause/Settings/Sound/\nControls/Help/GameOver", fillcolor="#2a1d10", shape=box];
+  }
+
+  subgraph cluster_autoload {
+    label="Autoload (project.godot [autoload])";
+    fontcolor="#5fe3a6"; color="#1e3a2c"; style="rounded"; bgcolor="#10241a";
+    Snd [label="/root/Snd\n(sound_manager.gd)\n1 AudioStreamPlayer je Sound\n+ Musik-Loop", fillcolor="#122a1c", shape=box];
+  }
+
+  Main -> Playfield [label="add_child()"];
+  Main -> ScoreLbl [label="add_child() ×3"];
+  Main -> PauseButton [label="add_child()"];
+  Main -> HoldButton [label="add_child()"];
+  Main -> Ui [label="add_child()"];
+
+  Playfield -> Main [label="lines_cleared, piece_locked,\nhold_changed, next_changed,\ntopped_out, soft_drop_cell,\nhard_dropped, piece_spawned", style=dotted, color="#8fa3c8"];
+  Ui -> Main [label="play_pressed, resume_pressed,\nrestart_pressed, quit_pressed,\nsettings_changed(cfg)", style=dotted, color="#8fa3c8"];
+  PauseButton -> Main [label="tapped", style=dotted, color="#8fa3c8"];
+  HoldButton -> Main [label="tapped", style=dotted, color="#8fa3c8"];
+
+  Main -> Snd [label="_sfx(key) über\nget_node_or_null(\"/root/Snd\")", style=dashed, color="#5fe3a6"];
+  Ui -> Snd [label="play()/set_volume()/\nget_volume()", style=dashed, color="#5fe3a6"];
+
+  note [shape=note, style=filled, fillcolor="#1b2140", fontcolor="#93a6c9", fontsize=11,
+        label="Kein einziges Area2D/CollisionShape2D im ganzen Projekt —\nder Well ist ein reines 2D-Array (_grid), Kollision heißt\nhier \"Zelle schon belegt?\" (Playfield._valid()/_occ())."];
+}

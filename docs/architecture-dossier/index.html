@@ -1,0 +1,993 @@
+<title>Tetris Architektur-Dossier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#05060d;
+    --bg-2:#080b18;
+    --panel:#10142c;
+    --panel-2:#171c3d;
+    --panel-line:#232a52;
+    --accent:#4db2ff;
+    --accent-soft:rgba(77,178,255,.14);
+    --accent-line:rgba(77,178,255,.22);
+    --amber:#ff9d4d;
+    --amber-soft:rgba(255,157,77,.14);
+    --good:#5fe3a6;
+    --text:#eef4ff;
+    --text-dim:#93a6c9;
+    --text-faint:#5d6c8f;
+    --code-bg:#0b0e20;
+    --shadow:0 20px 60px -30px rgba(0,0,0,.7);
+    --maxw:790px;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 700px at 12% -10%, rgba(77,178,255,.09), transparent 60%),
+      radial-gradient(900px 600px at 100% 0%, rgba(255,157,77,.06), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size:16px;
+    line-height:1.65;
+    padding-inline:20px;
+    padding-block:0 80px;
+  }
+  a{color:var(--accent);}
+  h1,h2,h3{text-wrap:balance; font-family:"IBM Plex Sans",sans-serif; color:var(--text); margin:0;}
+  code,pre,.mono{font-family:"IBM Plex Mono","SFMono-Regular",monospace;}
+  img{max-width:100%; display:block;}
+  table{font-variant-numeric:tabular-nums;}
+
+  /* ---------- stars: a faint, static echo of a classic arcade backdrop ------ */
+  .stars{
+    position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.55;
+    background-image:
+      radial-gradient(1.5px 1.5px at 8% 22%, #cfe6ff 0, transparent 60%),
+      radial-gradient(1.5px 1.5px at 22% 68%, #9fd0ff 0, transparent 60%),
+      radial-gradient(1px 1px at 38% 12%, #ffffff 0, transparent 60%),
+      radial-gradient(1.5px 1.5px at 52% 82%, #cfe6ff 0, transparent 60%),
+      radial-gradient(1px 1px at 68% 34%, #ffffff 0, transparent 60%),
+      radial-gradient(1.5px 1.5px at 78% 58%, #9fd0ff 0, transparent 60%),
+      radial-gradient(1px 1px at 91% 20%, #ffffff 0, transparent 60%),
+      radial-gradient(1.5px 1.5px at 95% 74%, #cfe6ff 0, transparent 60%);
+    background-repeat:no-repeat;
+  }
+
+  .wrap{position:relative; z-index:1; max-width:1180px; margin-inline:auto;}
+
+  /* ---------- title block, modelled on an engineering drawing's stamp ---------- */
+  header.titleblock{
+    padding-block:44px 28px;
+    display:flex; flex-wrap:wrap; gap:28px; align-items:flex-end; justify-content:space-between;
+    border-bottom:1px solid var(--panel-line);
+  }
+  .titleblock__id{display:flex; align-items:center; gap:16px;}
+  .titleblock__id img{width:56px; height:56px; border-radius:14px; box-shadow:var(--shadow); border:1px solid var(--accent-line);}
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent); margin:0 0 8px;
+  }
+  h1.title{
+    font-family:"Orbitron",sans-serif; font-weight:800; font-size:clamp(28px,4.2vw,42px);
+    letter-spacing:.02em; line-height:1.05;
+    background:linear-gradient(180deg,#fff, #b9d9ff 65%, var(--accent));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .stamp{
+    font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--text-dim);
+    display:grid; grid-template-columns:auto auto; gap:4px 14px; border:1px solid var(--panel-line);
+    background:var(--panel); border-radius:10px; padding:12px 16px;
+  }
+  .stamp b{color:var(--text); font-weight:600;}
+  .stamp .k{color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em; font-size:10.5px; align-self:center;}
+
+  .lede{max-width:var(--maxw); padding-block:22px 6px; color:var(--text-dim); font-size:16px;}
+  .lede strong{color:var(--text); font-weight:600;}
+
+  /* ---------- layout: sticky module rail + content column ---------- */
+  .layout{display:grid; grid-template-columns:200px minmax(0,1fr); gap:52px; padding-top:28px;}
+  nav.rail{position:sticky; top:24px; align-self:start; display:flex; flex-direction:column; gap:2px;}
+  nav.rail a{
+    display:flex; gap:10px; align-items:baseline; text-decoration:none; color:var(--text-dim);
+    font-size:13.5px; padding:8px 10px; border-radius:8px; border-left:2px solid transparent;
+  }
+  nav.rail a .n{font-family:"IBM Plex Mono",monospace; color:var(--text-faint); font-size:12px;}
+  nav.rail a:hover{background:var(--accent-soft); color:var(--text);}
+  nav.rail a.active{border-left-color:var(--accent); background:var(--accent-soft); color:var(--text);}
+  nav.rail a.active .n{color:var(--accent);}
+
+  main{min-width:0; max-width:var(--maxw);}
+
+  section.mod{padding-block:40px; border-top:1px solid var(--panel-line);}
+  section.mod:first-child{border-top:none; padding-top:6px;}
+  .mod__head{display:flex; gap:16px; align-items:baseline; margin-bottom:6px;}
+  .mod__num{
+    font-family:"Orbitron",sans-serif; font-weight:700; font-size:15px; color:var(--bg);
+    background:var(--accent); border-radius:6px; padding:3px 9px; letter-spacing:.03em;
+    box-shadow:0 0 0 1px var(--accent-line), 0 8px 18px -8px var(--accent-soft);
+  }
+  .mod h2{font-size:23px; font-weight:700; letter-spacing:.01em;}
+  .mod__sub{color:var(--text-faint); font-size:13px; margin:6px 0 22px; font-family:"IBM Plex Mono",monospace;}
+
+  p{margin:0 0 14px;}
+  h3{font-size:16.5px; font-weight:600; margin:26px 0 10px; color:var(--text);}
+  h3 .k{color:var(--accent); font-family:"IBM Plex Mono",monospace; font-size:13px; margin-right:8px;}
+  ul,ol{margin:0 0 16px; padding-left:22px;}
+  li{margin-bottom:6px;}
+
+  /* ---------- module table (file/purpose listing, styled like a parts list) --- */
+  .partslist{width:100%; border-collapse:collapse; margin:8px 0 24px; font-size:14px;}
+  .partslist th{
+    text-align:left; font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--text-faint); font-weight:500; padding:0 12px 8px 0;
+    border-bottom:1px solid var(--panel-line);
+  }
+  .partslist td{padding:10px 12px 10px 0; border-bottom:1px solid rgba(35,42,82,.55); vertical-align:top;}
+  .partslist tr:last-child td{border-bottom:none;}
+  .partslist td:first-child{white-space:nowrap;}
+  .partslist a{font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:500;}
+
+  /* ---------- pinout-style table (signals, constants) -------------------------- */
+  .pinout{width:100%; border-collapse:collapse; margin:8px 0 24px; font-size:13.5px;}
+  .pinout th{
+    text-align:left; font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--bg); background:var(--accent); padding:8px 12px;
+  }
+  .pinout th:first-child{border-radius:8px 0 0 0;}
+  .pinout th:last-child{border-radius:0 8px 0 0;}
+  .pinout td{padding:9px 12px; border-bottom:1px solid rgba(35,42,82,.6); background:var(--panel);}
+  .pinout tr:last-child td:first-child{border-radius:0 0 0 8px;}
+  .pinout tr:last-child td:last-child{border-radius:0 0 8px 0;}
+  .pinout code{color:var(--accent); font-size:12.5px;}
+  .pinout .tbl-wrap{overflow-x:auto;}
+
+  /* ---------- code console panel ---------------------------------------------- */
+  .code{
+    margin:14px 0 22px; border-radius:10px; overflow:hidden; border:1px solid var(--panel-line);
+    background:var(--code-bg); box-shadow:var(--shadow);
+  }
+  .code .tab{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:8px 14px; background:var(--panel-2); border-bottom:1px solid var(--panel-line);
+    font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--text-dim);
+  }
+  .code .tab .dots{display:flex; gap:5px;}
+  .code .tab .dots span{width:8px; height:8px; border-radius:50%; background:var(--panel-line);}
+  .code pre{margin:0; padding:16px 18px; overflow-x:auto;}
+  .code code{font-size:13px; line-height:1.62; color:#dbe8ff; white-space:pre;}
+  .code .c1{color:var(--text-faint);}
+  .tbl-wrap{overflow-x:auto;}
+
+  /* ---------- experimental: real Godot 4.7 editor syntax colors ----------
+     Values pulled verbatim from this machine's own editor_data/
+     editor_settings-4.7.tres (text_editor/theme/highlighting/*) — an
+     engine-wide setting, not per-project, so the same values used in the
+     sister Galaga dossier apply here unchanged. Screen-only comparison
+     toggle; @media print always neutralizes it back to the dossier's own
+     print palette regardless of toggle state, and the tab bar / rest of the
+     page never changes — only the code TEXT itself, since that's the one
+     readability question being tested. */
+  .syntax-toggle{
+    display:inline-flex; align-items:center; gap:10px; margin:14px 0 4px;
+    font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--text-dim);
+  }
+  .syntax-toggle button{
+    font-family:inherit; font-size:12px; letter-spacing:.02em; cursor:pointer;
+    background:var(--panel); color:var(--text-dim); border:1px solid var(--panel-line);
+    border-radius:7px; padding:6px 12px;
+  }
+  .syntax-toggle button[aria-pressed="true"]{ background:var(--accent); color:var(--bg); border-color:var(--accent); }
+  .syntax-toggle button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  body.godot-syntax .code{ background:#1a1a1a; }
+  body.godot-syntax .code code{ color:rgba(255,255,255,.75); }
+  .gd-kf{color:#ff8ccc;}  /* control-flow keywords: if/elif/for/while/return/match/await */
+  .gd-kd{color:#ff7085;}  /* declaration keywords: var/const/func/class_name/extends/signal/and/or/not/in/as */
+  .gd-t {color:#42ffc2;}  /* types: int/float/bool/String/Vector2/… and any CapitalizedWord */
+  .gd-s {color:#ffeda1;}  /* string literals */
+  .gd-n {color:#a1ffe0;}  /* numbers */
+  .gd-fn{color:#57b2ff;}  /* function calls */
+  .gd-fd{color:#66e6ff;}  /* function definitions (right after "func ") */
+  .gd-a {color:#ffb273;}  /* annotations: @export, @onready */
+  .gd-c {color:rgba(255,255,255,.5);}  /* comments */
+
+  /* ---------- figure plates ---------------------------------------------------- */
+  figure.plate{
+    margin:22px 0; border:1px solid var(--panel-line); border-radius:12px; overflow:hidden;
+    background:var(--panel); box-shadow:var(--shadow);
+  }
+  figure.plate img{width:100%;}
+  figure.plate figcaption{
+    padding:10px 16px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.03em;
+    color:var(--text-dim); border-top:1px solid var(--panel-line);
+  }
+  figure.plate figcaption b{color:var(--accent); font-weight:600; margin-right:10px;}
+  .plate-row{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  @media (max-width:640px){.plate-row{grid-template-columns:1fr;}}
+
+  .legend{display:flex; gap:18px; flex-wrap:wrap; font-size:12.5px; color:var(--text-dim); margin:2px 0 18px;}
+  .legend span{display:inline-flex; align-items:center; gap:7px;}
+  .legend i{width:14px; height:3px; border-radius:2px; display:inline-block;}
+
+  .callout{
+    border-left:3px solid var(--amber); background:var(--amber-soft); border-radius:0 10px 10px 0;
+    padding:12px 16px; font-size:14px; color:var(--text-dim); margin:18px 0;
+  }
+  .callout b{color:var(--text);}
+
+  footer{
+    max-width:var(--maxw); margin-left:auto; margin-right:0; padding-top:26px; border-top:1px solid var(--panel-line);
+    color:var(--text-faint); font-family:"IBM Plex Mono",monospace; font-size:11.5px;
+  }
+  footer p{margin:4px 0;}
+
+  @media (max-width:880px){
+    .layout{grid-template-columns:1fr;}
+    nav.rail{
+      position:static; flex-direction:row; overflow-x:auto; gap:6px; padding-bottom:6px;
+      border-bottom:1px solid var(--panel-line); margin-bottom:8px;
+    }
+    nav.rail a{white-space:nowrap; border-left:none; border-bottom:2px solid transparent;}
+    nav.rail a.active{border-left:none; border-bottom-color:var(--accent);}
+    main{max-width:100%;}
+  }
+
+  /* ---------- print hint (screen only) ------------------------------------
+     Not a button: this page runs inside a sandboxed iframe (no "allow-modals"
+     in its sandbox token list), which blocks window.print() unconditionally
+     per the HTML spec — no script here can open the print dialog, so a
+     "Print" button would just silently do nothing. Ctrl/Cmd+P is a browser
+     shortcut the user triggers directly, not a script call from inside this
+     frame, so it isn't affected by that restriction. */
+  .print-hint{
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--text-dim);
+    background:var(--panel); border:1px solid var(--panel-line); border-radius:8px;
+    padding:9px 14px; text-align:right; line-height:1.5;
+  }
+  .print-hint kbd{
+    font-family:inherit; font-size:11px; color:var(--text); background:var(--panel-2);
+    border:1px solid var(--panel-line); border-radius:4px; padding:1px 6px;
+  }
+
+  /* =====================================================================
+     PRINT — a separate "blueprint" palette: dark backgrounds don't print
+     (most browsers drop background colors unless "print backgrounds" is on,
+     which would leave this page's light text on bare white paper otherwise),
+     so print gets its own light, ink-appropriate scheme instead of trying to
+     reuse the on-screen dark one. Page-break rules keep headings glued to
+     their following paragraph, and figures/tables/code blocks intact.
+     ===================================================================== */
+  @media print{
+    @page{ size:A4; margin:16mm 15mm 18mm; }
+
+    /* Redefine the same tokens every component already reads from — this is
+       what actually makes the switch safe: a color hard-coded per selector
+       is easy to forget on one element, a token redefinition fixes every
+       consumer of --text/--accent/etc. at once. Dark backgrounds don't print
+       (browsers drop background-color unless "print backgrounds" is on,
+       which would leave this page's light text on bare paper), so print
+       gets its own light, ink-appropriate palette instead of reusing the
+       on-screen dark one — plus print-color-adjust below as a safety net
+       for the few places that still rely on a filled background. */
+    :root{
+      --bg:#f4f6fb; --bg-2:#f4f6fb; --panel:#ffffff; --panel-2:#eef1f9;
+      --panel-line:#c7d0e6; --accent:#0b5fa8; --accent-soft:transparent; --accent-line:#c7d0e6;
+      --amber:#b5711f; --amber-soft:#fff3e2; --good:#1f7a4d;
+      --text:#151a33; --text-dim:#4b5578; --text-faint:#6b7699;
+      --code-bg:#ffffff; --shadow:none;
+    }
+    *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+    .stars, nav.rail, .print-hint, .syntax-toggle{ display:none !important; }
+    /* Print honors the on-screen Godot-editor-colors toggle instead of
+       silently dropping it — a comparison feature that vanishes the one
+       time you actually commit to a PDF isn't much of a comparison. Only
+       the code panels switch; the rest of the print "blueprint" theme
+       (headings, tables, page background) stays exactly as designed either
+       way. Default (toggle off) keeps the print-safe light scheme; toggle
+       on reproduces the real dark editor look, ink included (needs the
+       print-color-adjust above to actually paint the dark fill). */
+    body:not(.godot-syntax) .code{ background:var(--code-bg) !important; }
+    body:not(.godot-syntax) .code code{ color:var(--text) !important; }
+    body:not(.godot-syntax) .gd-kf, body:not(.godot-syntax) .gd-kd,
+    body:not(.godot-syntax) .gd-t, body:not(.godot-syntax) .gd-s,
+    body:not(.godot-syntax) .gd-n, body:not(.godot-syntax) .gd-fn,
+    body:not(.godot-syntax) .gd-fd, body:not(.godot-syntax) .gd-a,
+    body:not(.godot-syntax) .gd-c{ color:inherit !important; }
+    body.godot-syntax .code{ background:#1a1a1a !important; border-color:#000; }
+    body.godot-syntax .code .tab{ background:#232323; color:rgba(255,255,255,.6); border-bottom-color:#000; }
+    body.godot-syntax .code code{ color:rgba(255,255,255,.75) !important; }
+    .layout{ display:block; }
+    main{ max-width:none; }
+    body{ padding:0; font-size:12.5px; background:var(--bg); } /* flat paper, no on-screen glow gradients */
+
+    h1.title{ background:none; -webkit-text-fill-color:currentColor; }
+    .code code{ color:var(--text); }  /* the one hard-coded (non-token) text color on screen */
+    /* a scrollbar means nothing on a static page — wrap long lines instead of
+       silently clipping them off the right edge of the sheet */
+    .code pre{ overflow-x:visible; }
+    .code pre, .code code{ white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere; }
+    .tbl-wrap{ overflow-x:visible; }
+
+    /* every module opens on a fresh sheet, so its heading can never be
+       stranded alone at the bottom of the previous one */
+    section.mod{ border-top:none; padding-block:0; break-before:page; page-break-before:always; }
+    section.mod:first-of-type{ break-before:avoid; page-break-before:avoid; }
+
+    /* these two rely on a FILLED background behind light text on screen —
+       kept as an outline/text-only look in print so they still read even if
+       a PDF path ignores print-color-adjust and drops the fill */
+    .mod__num{ background:none; color:var(--accent); border:1.4px solid var(--accent); }
+    .pinout th{ background:none; color:var(--accent); border-bottom:1.5px solid var(--accent); }
+
+    h2, h3, .mod__head{
+      break-after:avoid; page-break-after:avoid; break-inside:avoid; page-break-inside:avoid;
+    }
+    p, li{ orphans:3; widows:3; }
+
+    /* `overflow:hidden` (used on screen only to clip the rounded corners
+       around the tab bar / screenshot) makes Chrome's print engine ignore
+       break-inside:avoid on the element that has it — a well-known bug, and
+       the actual reason code blocks were still splitting mid-block even
+       though this rule was already here. Print instead gets square corners
+       and no overflow clipping, so the box is a plain fragmentable block
+       Chrome can move to the next page as a whole. */
+    .code, figure.plate{ overflow:visible; border-radius:0; }
+    .code .tab{ border-radius:0; }
+    .code, figure.plate, .plate-row, .callout{ break-inside:avoid; page-break-inside:avoid; }
+    .code pre, .code .tab{ break-inside:avoid; page-break-inside:avoid; }
+    .code .tab{ break-after:avoid; page-break-after:avoid; }
+    .partslist tr, .pinout tr{ break-inside:avoid; page-break-inside:avoid; }
+
+    footer{ break-before:avoid; }
+  }
+</style>
+
+<div class="stars"></div>
+<div class="wrap">
+
+  <header class="titleblock">
+    <div class="titleblock__id">
+      <img src="assets/tetris-icon.png" alt="Tetris-Icon">
+      <div>
+        <p class="eyebrow">Technisches Dossier</p>
+        <h1 class="title">TETRIS<br>ARCHITEKTUR&#8209;DOSSIER</h1>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end;">
+      <p class="print-hint">Für die PDF: <kbd>Strg</kbd>/<kbd>Cmd</kbd>+<kbd>P</kbd><br>Ziel „Als PDF speichern"</p>
+      <div class="stamp">
+        <span class="k">Doc</span><b>TETRIS&#8209;ARCH&#8209;001</b>
+        <span class="k">Rev</span><b>v1.0.4</b>
+        <span class="k">Datum</span><b>2026&#8209;09&#8209;16</b>
+        <span class="k">Engine</span><b>Godot 4.7.1 · GL Compatibility</b>
+      </div>
+    </div>
+  </header>
+
+  <p class="lede">
+    Übersicht über <strong>Steuerung</strong> (Tastatur/Maus/Touch/Gamepad),
+    <strong>Piece-Spawn &amp; SRS-Rotation</strong>, <strong>Line-Clear-Erkennung
+    &amp; T-Spin</strong>, <strong>Ghost-Piece &amp; Maus-Platzierungssuche</strong>
+    und <strong>Scoring/Leveling</strong> im Tetris-Projekt — fünf Module, von
+    den einzelnen GDScript-Dateien über den (fast leeren) Szenenbaum bis zu den
+    Signalen, die alles verbinden. Alle Code-Ausschnitte und Screenshots stammen
+    aus dem aktuellen Projektstand (live aus dem laufenden Spiel fotografiert);
+    die beiden Diagramme in Modul 02 und 05 sind eigens dafür gezeichnet.
+  </p>
+
+  <div class="syntax-toggle">
+    Code-Farben:
+    <button type="button" id="syntaxToggleBtn" aria-pressed="false" onclick="toggleGodotSyntax()">Dossier ⇄ Godot-Editor (experimentell)</button>
+  </div>
+
+  <div class="layout">
+    <nav class="rail" id="rail">
+      <a href="#sec-01"><span class="n">01</span> Module</a>
+      <a href="#sec-02"><span class="n">02</span> Szenenbaum</a>
+      <a href="#sec-03"><span class="n">03</span> Kern-Code</a>
+      <a href="#sec-04"><span class="n">04</span> Signale</a>
+      <a href="#sec-05"><span class="n">05</span> UML</a>
+    </nav>
+
+    <main>
+
+      <!-- ============================================================= 01 -->
+      <section class="mod" id="sec-01">
+        <div class="mod__head"><span class="mod__num">01</span><h2>GDScript-Dateien — Bedeutung &amp; Modularisierung</h2></div>
+        <p class="mod__sub">jede Datei kennt nur, was sie selbst betrifft</p>
+
+        <p>Noch konsequenter getrennt als in vergleichbaren Projekten dieses
+        Lernpfads: <code>playfield.gd</code> kennt weder Punkte noch Level
+        noch HUD — es <em>meldet</em> nur per Signal, was im Well passiert
+        (Zeile voll, Stein gelandet, Tetromino gehalten). <code>main.gd</code>
+        ist der einzige Ort, der daraus Score/Level macht; <code>ui.gd</code>
+        wiederum weiß nichts vom Spielzustand, nur von Bildschirmen und
+        Callables.</p>
+
+        <div class="tbl-wrap">
+        <table class="partslist">
+          <thead><tr><th>Bereich</th><th>Dateien</th><th>Zweck</th></tr></thead>
+          <tbody>
+          <tr>
+            <td>Einstieg /<br>State-Machine</td>
+            <td><a href="#" class="mono">main.gd</a></td>
+            <td>Einziger Ort, der den Spielzustand kennt (<code>START→PLAYING→PAUSED→OVER</code>). Score/Level/Lines, Fall-Geschwindigkeit, responsives Layout, routet Tastatur/Maus/Touch/Gamepad an <code>playfield.gd</code>, zeichnet HUD-Vorschauen + Flash-Text selbst per <code>_draw()</code>.</td>
+          </tr>
+          <tr>
+            <td>Spielfeld &amp;<br>Regeln</td>
+            <td class="mono">playfield.gd</td>
+            <td>Das 10×20-Grid als reines <code>Array</code>, SRS-Rotation mit Wandkicks, Line-Clear + T-Spin-Erkennung, Ghost-Piece, die Maus-Platzierungssuche (BFS + Heuristik). Komplett unabhängig von <code>main.gd</code> testbar.</td>
+          </tr>
+          <tr>
+            <td>Tetromino-<br>Daten</td>
+            <td class="mono">pieces.gd</td>
+            <td>Rein statisch (<code>RefCounted</code>, kein Node im Baum): die vier SRS-Rotationszustände pro Stein, die Kick-Tabellen, Farben, Spawn-Spalten.</td>
+          </tr>
+          <tr>
+            <td>UI</td>
+            <td class="mono">ui.gd</td>
+            <td>Alle Bildschirme auf einem <code>CanvasLayer</code>, <strong>komplett im Code gebaut</strong> — Start / Pause / Settings (+ Sound- und Controls-Unterseite) / bildbasierte Hilfe / Game Over + Hall of Fame. Kein einziges <code>.tscn</code> dafür.</td>
+          </tr>
+          <tr>
+            <td>HUD-Buttons</td>
+            <td class="mono">pause_button.gd<br>hold_button.gd</td>
+            <td>Kleine eigenständige <code>Control</code>s mit eigenem <code>_draw()</code> + <code>_gui_input()</code>, je ein <code>tapped</code>-Signal — reagieren auf Touch <em>und</em> Maus gleichermaßen.</td>
+          </tr>
+          <tr>
+            <td>Audio</td>
+            <td class="mono">sound_manager.gd</td>
+            <td>Autoload <code>Snd</code>: ein <code>AudioStreamPlayer</code> je Sound-Key + Musik-Loop, Pro-Sound-Lautstärke mit <code>base_db</code>-Kalibrierung.</td>
+          </tr>
+          <tr>
+            <td>Diagnose</td>
+            <td class="mono">_selftest.gd</td>
+            <td>Headless-Parse-Check + ein paar Logik-Assertions. Bekannte Lücke: fängt nur harte Abhängigkeiten von <code>playfield.gd</code>/<code>pieces.gd</code> — <code>main.gd</code>/<code>ui.gd</code> brauchen einen echten Boot-Check (<code>godot --headless</code> ohne <code>--script</code>).</td>
+          </tr>
+          </tbody>
+        </table>
+        </div>
+
+        <div class="plate-row">
+          <figure class="plate">
+            <img src="assets/fig-gameplay.png" alt="Laufendes Spiel mit Stack, Ghost-Piece und HUD">
+            <figcaption><b>FIG.&nbsp;01</b> Echter Screenshot: gefärbter Stack, Ghost-Umriss (grün, unten links) und HUD (Hold/Next/Score)</figcaption>
+          </figure>
+          <figure class="plate">
+            <img src="assets/fig-rebind.png" alt="Settings-Bildschirm zum Umbelegen der Tasten">
+            <figcaption><b>FIG.&nbsp;02</b> Settings → Controls: jede Aktion frei umbelegbar (hier QWERTZ-bewusst „Y" statt „Z")</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ============================================================= 02 -->
+      <section class="mod" id="sec-02">
+        <div class="mod__head"><span class="mod__num">02</span><h2>Szenenaufbau &amp; Abhängigkeiten</h2></div>
+        <p class="mod__sub">eine fast leere .tscn, wirklich alles Übrige im Code</p>
+
+        <p><code>main.tscn</code> (<code>run/main_scene</code>) besteht aus
+        genau <strong>einem</strong> Node — <code>Main</code> mit seinem
+        Skript, sonst nichts. Kein vorverdrahtetes Kind, kein einziges
+        weiteres <code>.tscn</code> im ganzen Projekt. <code>Main._build()</code>
+        erzeugt beim Start <em>jeden</em> Node per <code>add_child()</code>:
+        das <code>Playfield</code>, die drei HUD-Labels, die beiden
+        HUD-Buttons — und <code>Ui</code>, das seinerseits <em>jeden Button,
+        jeden Slider, jedes Panel</em> für <em>jeden</em> Bildschirm im Code
+        zusammensetzt (siehe <code>ui.gd::_button()</code>/<code>_row()</code>/
+        <code>_sound_row()</code>). Das ist konsequenter als bei den anderen
+        Projekten dieses Lernpfads, die zumindest für Laufzeit-Objekte (Gegner,
+        Projektile) noch eigene <code>.tscn</code>-Dateien instanziieren —
+        hier gibt es nicht einmal das.</p>
+
+        <figure class="plate">
+          <img src="assets/fig-scenetree.svg" alt="Szenenbaum- und Abhängigkeitsdiagramm">
+          <figcaption><b>FIG.&nbsp;03</b> main.tscn hat nur einen Node — alles Übrige entsteht in <code>_build()</code></figcaption>
+        </figure>
+
+        <h3>Kein Kollisionssystem — ein Array ersetzt Area2D</h3>
+        <p>Anders als in den Actionspielen dieses Lernpfads gibt es in Tetris
+        <strong>kein einziges</strong> <code>Area2D</code>/<code>CollisionShape2D</code>
+        und keine Physik-Layer. „Kollision" heißt hier ausschließlich: ist
+        eine Grid-Zelle schon belegt? Der komplette Well ist ein simples
+        verschachteltes <code>Array</code>, <code>-1</code> bedeutet leer,
+        jeder andere Wert ist der Tetromino-Typ (für die Farbe beim Zeichnen):</p>
+
+        <div class="code">
+          <div class="tab"><span>playfield.gd — _valid() / _occ()</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>func _valid(type: int, rot: int, pos: Vector2i) -&gt; bool:
+    for c in _cells(type, rot, pos):
+        if c.x &lt; 0 or c.x &gt;= COLS or c.y &gt;= ROWS:
+            return false
+        if c.y &gt;= 0 and _grid[c.y][c.x] != -1:   <span class="c1"># y&lt;0 = über der Decke, immer frei</span>
+            return false
+    return true
+
+
+func _occ(x: int, y: int) -&gt; bool:
+    if x &lt; 0 or x &gt;= COLS or y &gt;= ROWS:
+        return true
+    if y &lt; 0:
+        return false
+    return _grid[y][x] != -1</code></pre>
+        </div>
+        <p>Jede einzelne Spielregel — Bewegung, Rotation, Wandkick, Ghost,
+        sogar die Maus-BFS-Suche — ruft am Ende nur diese eine Funktion auf.
+        Kein Node muss dafür existieren, keine Physik-Engine läuft mit.</p>
+      </section>
+
+      <!-- ============================================================= 03 -->
+      <section class="mod" id="sec-03">
+        <div class="mod__head"><span class="mod__num">03</span><h2>Wesentliche Code-Ausschnitte</h2></div>
+        <p class="mod__sub">Steuerung → Spawn/Rotation → Line-Clear/T-Spin → Ghost/Maus-Assistent → Scoring</p>
+
+        <h3><span class="k">A</span>Steuerung — drei Eingabewege, ein gemeinsames Ziel</h3>
+        <p>Tastatur (DAS/ARR), Maus (Aim-Spalte) und Touch (Swipe) sind völlig
+        unabhängig implementiert, aber alle drei rufen am Ende dieselben
+        <code>Playfield</code>-Methoden auf — <code>move()</code>,
+        <code>rotate_piece()</code>, <code>hard_drop()</code>, <code>aim()</code>.
+        Kein Eingabeweg hat eigene Spiellogik.</p>
+
+        <div class="code">
+          <div class="tab"><span>main.gd — _process() — DAS/ARR (Tastatur/Gamepad)</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>var dir := 0
+if Input.is_action_pressed("move_right"): dir += 1
+if Input.is_action_pressed("move_left"): dir -= 1
+if dir == 0:
+    _das_dir = 0
+    return
+_use_keyboard()
+if dir != _das_dir:                    <span class="c1"># Richtungswechsel: sofort 1 Zelle, DAS neu starten</span>
+    _das_dir = dir
+    _das_time = 0.0
+    _arr_time = 0.0
+    if _field.move(dir):
+        _sfx("move")
+    return
+_das_time += dt
+if _das_time &gt;= DAS:                   <span class="c1"># 0.16s Verzögerung, danach Auto-Repeat</span>
+    _arr_time += dt
+    while _arr_time &gt;= ARR:            <span class="c1"># 0.03s pro weiterer Zelle</span>
+        _arr_time -= ARR
+        if not _field.move(dir):
+            break</code></pre>
+        </div>
+
+        <p>Maus <strong>und</strong> Touch münden im selben Aufruf —
+        <code>Playfield.aim(col)</code> dreht das Stück in die beste Rotation
+        für diese Spalte <em>und</em> schiebt es dorthin (siehe Abschnitt D):</p>
+        <div class="code">
+          <div class="tab"><span>main.gd — _mouse_update() / _touch_refresh_suggest()</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>func _mouse_update(screen_pos: Vector2) -&gt; void:
+    if _field.piece_left_col() &lt; 0:
+        return
+    var col := (screen_pos.x - _field.position.x) / float(_field.cell) - 0.5
+    ...
+    _field.aim(col)
+
+
+func _touch_refresh_suggest() -&gt; void:
+    if _field.piece_left_col() &lt; 0:
+        _field.set_suggestion({})
+        return
+    _field.aim(float(_touch_col))   <span class="c1"># _touch_col wandert per Swipe, Rest ist identisch zur Maus</span></code></pre>
+        </div>
+
+        <h3><span class="k">B</span>Piece-Spawn — 7-Bag-Zufall &amp; SRS-Rotation mit Wandkicks</h3>
+        <p>Die Nachschub-Warteschlange füllt sich aus einem klassischen
+        „7-Bag" — jeder der sieben Steine kommt garantiert einmal pro Beutel
+        vor, per Fisher-Yates gemischt, bevor der nächste Beutel beginnt:</p>
+        <div class="code">
+          <div class="tab"><span>playfield.gd — _bag_next()</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>func _bag_next() -&gt; int:
+    if _bag.is_empty():
+        _bag = [Pieces.I, Pieces.O, Pieces.T, Pieces.S, Pieces.Z, Pieces.J, Pieces.L]
+        for i in range(_bag.size() - 1, 0, -1):
+            var j := _rng.randi_range(0, i)
+            var tmp = _bag[i]; _bag[i] = _bag[j]; _bag[j] = tmp
+    return _bag.pop_front()</code></pre>
+        </div>
+
+        <p>Rotation ist echtes SRS: eine feste Tabelle nennt pro
+        Ausgangs-/Zielzustand bis zu fünf Verschiebungen („Kicks"), die der
+        Reihe nach probiert werden — die erste, die eine gültige Position
+        ergibt, gewinnt:</p>
+        <div class="code">
+          <div class="tab"><span>playfield.gd — _rotated_state()</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>func _rotated_state(type: int, rot: int, pos: Vector2i, dir: int) -&gt; Array:
+    var nr := (rot + dir) % 4
+    if nr &lt; 0: nr += 4
+    var table = Pieces.KICKS[Pieces.kick_kind(type)]   <span class="c1"># "I" oder "main" (J/L/S/T/Z) — O kickt nie</span>
+    var kicks: Array = table.get(rot, {}).get(nr, [Vector2i.ZERO])
+    for k in kicks:
+        var np: Vector2i = pos + Vector2i(k.x, k.y)
+        if _valid(type, nr, np):
+            return [nr, np]
+    return []   <span class="c1"># jeder Kick blockiert -&gt; Rotation abgelehnt</span></code></pre>
+        </div>
+
+        <h3><span class="k">C</span>Line-Clear-Erkennung &amp; T-Spin</h3>
+        <p>Landet ein Stein, prüft <code>_lock_piece()</code> zuerst auf einen
+        T-Spin (T-Stein, letzter Move war eine Drehung, mindestens 3 der 4
+        diagonalen Eckzellen blockiert), schreibt dann die Zellen ins Grid und
+        sucht volle Reihen:</p>
+        <div class="code">
+          <div class="tab"><span>playfield.gd — _lock_piece()</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>func _lock_piece() -&gt; void:
+    var tspin := _type == Pieces.T and _last_rot and _tspin_corners() &gt;= 3
+
+    var topped := true
+    for c in _cells(_type, _rot, _pos):
+        if c.y &gt;= 0: topped = false
+        if c.y &gt;= 0 and c.y &lt; ROWS and c.x &gt;= 0 and c.x &lt; COLS:
+            _grid[c.y][c.x] = _type
+    piece_locked.emit()
+    if topped:
+        playing = false
+        topped_out.emit()
+        return
+
+    var full: Array = []
+    for r in ROWS:
+        if not _grid[r].has(-1):
+            full.append(r)
+    _type = -1
+    if full.is_empty():
+        if tspin:
+            lines_cleared.emit(0, true)   <span class="c1"># T-Spin ohne Zeile zählt trotzdem</span>
+        _spawn_from_queue()
+        return
+    _clearing = full          <span class="c1"># einfrieren, _process() zeigt den Flash</span>
+    _clear_t = 0.0
+    lines_cleared.emit(full.size(), tspin)</code></pre>
+        </div>
+        <p>Der T-Spin-Test selbst zählt, wie viele der vier Ecken um die
+        Steinmitte entweder außerhalb des Wells liegen oder schon belegt sind
+        — Wand und Boden zählen genauso mit wie gestapelte Zellen:</p>
+        <div class="code">
+          <div class="tab"><span>playfield.gd — _tspin_corners()</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>func _tspin_corners() -&gt; int:
+    var ctr := _pos + Vector2i(1, 1)   <span class="c1"># die T-Box-Mitte sitzt immer bei (1,1)</span>
+    var n := 0
+    for d: Vector2i in [Vector2i(-1,-1), Vector2i(1,-1), Vector2i(-1,1), Vector2i(1,1)]:
+        var p: Vector2i = ctr + d
+        if p.x &lt; 0 or p.x &gt;= COLS or p.y &gt;= ROWS:
+            n += 1
+        elif p.y &gt;= 0 and _grid[p.y][p.x] != -1:
+            n += 1
+    return n</code></pre>
+        </div>
+        <p>Nach <code>CLEAR_TIME</code> (0.26&nbsp;s, ein weißer Wash +
+        Squash-Animation in <code>_draw()</code>) räumt
+        <code>_collapse_cleared()</code> die vollen Reihen weg und ruft
+        <code>_spawn_from_queue()</code> — Gameplay steht während des Flashs
+        still, <code>_process()</code> kehrt sofort zurück.</p>
+
+        <h3><span class="k">D</span>Ghost-Piece &amp; Maus-Platzierungssuche</h3>
+        <p>Ohne Maus-Assistenz ist der Ghost trivial — einfach so weit wie
+        möglich nach unten:</p>
+        <div class="code">
+          <div class="tab"><span>playfield.gd — _ghost_pos()</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>func _ghost_pos() -&gt; Vector2i:
+    var p := _pos
+    while _valid(_type, _rot, p + Vector2i(0, 1)):
+        p += Vector2i(0, 1)
+    return p</code></pre>
+        </div>
+        <p>Für Maus und Touch übernimmt <code>suggest_placement()</code> die
+        eigentliche Arbeit — eine <strong>Breitensuche</strong> über
+        links/rechts/runter/beide Rotationsrichtungen ab der Spawn-Position
+        sammelt <em>jede</em> erreichbare Ruhelage, danach entscheidet eine
+        gewichtete Heuristik:</p>
+        <div class="code">
+          <div class="tab"><span>playfield.gd — suggest_placement() (BFS-Kern)</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>while not frontier.is_empty() and iterations &lt; 4000:
+    var s = frontier.pop_back()
+    var r: int = s[0]; var p: Vector2i = s[1]
+    if not _valid(_type, r, p + _DOWN):
+        landed.append([r, p])              <span class="c1"># kann nicht weiter fallen -&gt; eine Ruhelage</span>
+    var moves: Array = [[r, p + Vector2i(-1,0)], [r, p + Vector2i(1,0)], [r, p + _DOWN]]
+    var cw := _rotated_state(_type, r, p, 1)
+    if not cw.is_empty(): moves.append(cw)   <span class="c1"># Rotation ist nur ein weiterer BFS-Zug</span>
+    var ccw := _rotated_state(_type, r, p, -1)
+    if not ccw.is_empty(): moves.append(ccw)
+    for m in moves:
+        var key := Vector3i(m[1].x, m[1].y, m[0])
+        if not seen.has(key) and _valid(m[0], m[1]):
+            seen[key] = true
+            frontier.append([m[0], m[1]])</code></pre>
+        </div>
+        <p>Die Bewertung gewichtet Löcher am stärksten negativ, geräumte
+        Zeilen positiv, und zieht die Zielspalte nur als leichten Tie-Breaker
+        heran:</p>
+        <div class="code">
+          <div class="tab"><span>playfield.gd — _placement_score()</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>return 4.0 * float(lines) \
+    - 6.0 * float(holes) \
+    - 0.55 * float(bumpiness) \
+    - 0.16 * float(aggregate) \
+    - 0.45 * float(piece_span_y) \      <span class="c1"># liegt lange Steine flach, außer Löcher sprechen dagegen</span>
+    - 0.8 * absf(center - target_col)   <span class="c1"># Cursor-Spalte zieht nur sanft</span></code></pre>
+        </div>
+
+        <figure class="plate">
+          <img src="assets/fig-aim.png" alt="Hilfe-Bildschirm: Maus zielt auf eine Spalte, das Spiel dreht/platziert den Stein automatisch">
+          <figcaption><b>FIG.&nbsp;04</b> Die spielinterne Hilfeseite erklärt genau diesen Mechanismus: Spalte zeigen, Rest übernimmt <code>suggest_placement()</code></figcaption>
+        </figure>
+
+        <h3><span class="k">E</span>Scoring &amp; Leveling</h3>
+        <p>Die Punktevergabe passiert komplett in <code>main.gd</code> —
+        <code>playfield.gd</code> meldet nur <code>rows</code> und
+        <code>tspin</code>, kennt selbst keine Punktwerte:</p>
+        <div class="code">
+          <div class="tab"><span>main.gd — _on_lines_cleared()</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>func _on_lines_cleared(rows: int, tspin: bool) -&gt; void:
+    if tspin:
+        _add_score(TSPIN_SCORE[clampi(rows, 0, 3)] * _level)
+        _flash(["T-SPIN","T-SPIN SINGLE","T-SPIN DOUBLE","T-SPIN TRIPLE"][clampi(rows,0,3)])
+        _sfx("lines")
+    else:
+        _add_score(LINE_SCORE[clampi(rows, 0, 4)] * _level)
+        if rows &gt; 0:
+            _sfx("line1" if rows == 1 else "lines")
+    _lines += rows
+    var new_level: int = _start_level + int(_lines / 10.0)
+    if new_level != _level:
+        _level = new_level
+        _field.fall_interval = _fall_interval_for(_level)
+        _flash("LEVEL %d" % _level)</code></pre>
+        </div>
+        <p>Die Fallgeschwindigkeit selbst folgt einer klassischen
+        Potenzkurve, pro Level etwas steiler werdend und bei 20 gedeckelt:</p>
+        <div class="code">
+          <div class="tab"><span>main.gd — _fall_interval_for()</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>func _fall_interval_for(level: int) -&gt; float:
+    var l := clampi(level, 1, 20)
+    return maxf(pow(0.8 - (l - 1) * 0.007, l - 1), 0.016)</code></pre>
+        </div>
+        <p>Die übrigen Balance-Werte stehen als dokumentierte <code>const</code>
+        direkt im jeweiligen Skript:</p>
+        <div class="code">
+          <div class="tab"><span>main.gd / playfield.gd — ausgewählte Konstanten</span><span class="dots"><span></span><span></span><span></span></span></div>
+          <pre><code>const DAS := 0.16                    <span class="c1"># main.gd — Verzögerung bis Auto-Repeat einsetzt</span>
+const ARR := 0.03                    <span class="c1"># main.gd — Sekunden pro weiterer Zelle danach</span>
+const LINE_SCORE := [0, 100, 300, 500, 800]      <span class="c1"># main.gd — ×Level</span>
+const TSPIN_SCORE := [400, 800, 1200, 1600]      <span class="c1"># main.gd — 0..3 Zeilen, ×Level</span>
+
+const LOCK_DELAY := 0.5              <span class="c1"># playfield.gd — Zeit auf dem Boden, bevor gesperrt wird</span>
+const MAX_LOCK_RESETS := 15          <span class="c1"># playfield.gd — Deckel gegen endloses Infinity-Spin</span>
+const SOFT_DROP_FACTOR := 20.0       <span class="c1"># playfield.gd — ×normale Gravity beim Soft-Drop</span>
+const CLEAR_TIME := 0.26             <span class="c1"># playfield.gd — Line-Clear-Flash, bevor Reihen fallen</span></code></pre>
+        </div>
+
+        <figure class="plate">
+          <img src="assets/fig-goal.png" alt="Hilfe-Bildschirm: Ziel und Punktetabelle">
+          <figcaption><b>FIG.&nbsp;05</b> Die Punktetabelle aus der spielinternen Hilfe deckt sich exakt mit <code>LINE_SCORE</code>/<code>TSPIN_SCORE</code> oben</figcaption>
+        </figure>
+
+        <div class="callout">
+          <b>Hinweis:</b> Der Soft-Drop-Bonus (<code>soft_drop_cell</code>,
+          +1/Zeile) und der Hard-Drop-Bonus (<code>hard_dropped(rows)</code>,
+          +2/Zeile) laufen als eigene, sehr kleine Signale direkt aus
+          <code>playfield.gd</code> — sie werden nicht über
+          <code>lines_cleared</code> mitgezählt, weil sie unabhängig davon
+          entstehen, ob am Ende überhaupt eine Reihe voll wird.
+        </div>
+      </section>
+
+      <!-- ============================================================= 04 -->
+      <section class="mod" id="sec-04">
+        <div class="mod__head"><span class="mod__num">04</span><h2>Wichtige Signale</h2></div>
+        <p class="mod__sub">wer meldet was an wen</p>
+
+        <div class="tbl-wrap">
+        <table class="pinout">
+          <thead><tr><th>Signal</th><th>Emitter</th><th>Empfänger</th><th>Bedeutung</th></tr></thead>
+          <tbody>
+          <tr>
+            <td><code>lines_cleared(rows, tspin)</code></td><td>Playfield</td>
+            <td><code>Main._on_lines_cleared</code></td>
+            <td>Auslöser für Punkte, Level-Aufstieg, Flash-Text. <code>rows=0, tspin=true</code> ist gültig (T-Spin ohne Zeile).</td>
+          </tr>
+          <tr>
+            <td><code>piece_locked</code></td><td>Playfield</td>
+            <td>Main (<code>_sfx("drop")</code>)</td>
+            <td>Jedes Aufsetzen — Hard-Drop <strong>und</strong> normales Absinken.</td>
+          </tr>
+          <tr>
+            <td><code>hold_changed(type)</code></td><td>Playfield</td>
+            <td>Main (Sound + <code>queue_redraw</code>)</td>
+            <td>Hold-Box neu zeichnen.</td>
+          </tr>
+          <tr>
+            <td><code>next_changed(queue)</code></td><td>Playfield</td>
+            <td>Main (<code>queue_redraw</code>)</td>
+            <td>Next-Box neu zeichnen.</td>
+          </tr>
+          <tr>
+            <td><code>topped_out</code></td><td>Playfield</td>
+            <td><code>Main._on_top_out</code></td>
+            <td>Game Over — ein gesperrter Stein ragt noch über die Decke hinaus.</td>
+          </tr>
+          <tr>
+            <td><code>soft_drop_cell</code></td><td>Playfield</td>
+            <td>Main (<code>_add_score(1)</code>)</td>
+            <td>+1 Punkt je Zelle, die per gehaltenem Soft-Drop gewonnen wird.</td>
+          </tr>
+          <tr>
+            <td><code>hard_dropped(rows)</code></td><td>Playfield</td>
+            <td>Main (<code>_add_score(rows*2)</code>)</td>
+            <td>+2 Punkte je Zeile Fallstrecke beim Hard-Drop.</td>
+          </tr>
+          <tr>
+            <td><code>piece_spawned</code></td><td>Playfield</td>
+            <td><code>Main._on_piece_spawned</code></td>
+            <td>Touch-Zielspalte neu herleiten bzw. Maus-Aim erneut anwenden.</td>
+          </tr>
+          <tr>
+            <td><code>tapped</code></td><td>PauseButton / HoldButton</td>
+            <td><code>Main._pause()</code> / <code>field.hold()</code></td>
+            <td>HUD-Buttons, feuern schon beim Press (kein Fehlklick durch verpasstes Release).</td>
+          </tr>
+          <tr>
+            <td><code>play_pressed</code> / <code>resume_pressed</code> / <code>restart_pressed</code> / <code>quit_pressed</code> / <code>settings_changed(cfg)</code></td><td>Ui</td>
+            <td>Main</td>
+            <td>Menü-Navigation — <code>Ui</code> kennt dabei nie den <code>Main</code>-Spielzustand selbst, nur diese Callables/Signale.</td>
+          </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <!-- ============================================================= 05 -->
+      <section class="mod" id="sec-05">
+        <div class="mod__head"><span class="mod__num">05</span><h2>Optional: UML-Übersicht</h2></div>
+        <p class="mod__sub">ging auch hier</p>
+
+        <p>Eine vereinfachte Klassen-/Beziehungsübersicht der oben genannten
+        Kernklassen — Rauten bedeuten „besitzt", gepunktete Linien den
+        Signal-Fluss, gestrichelte Pfeile direkte Methodenaufrufe.</p>
+
+        <figure class="plate">
+          <img src="assets/fig-uml.svg" alt="Vereinfachtes Klassendiagramm">
+          <figcaption><b>FIG.&nbsp;06</b> Klassendiagramm der Kern-Gameplay-Klassen (Graphviz)</figcaption>
+        </figure>
+
+        <div class="callout">
+          <b>Hinweis:</b> Verglichen mit einem Formations-/Kollisions-lastigen
+          Actionspiel ist dieser Graph auffällig flach — es gibt keine
+          Laufzeit-Instanzen-Hierarchie (keine Gegner, keine Projektile),
+          nur <code>Main</code>, sein <code>Playfield</code>, sein
+          <code>Ui</code> und die beiden winzigen HUD-Buttons. Die eigentliche
+          Komplexität steckt nicht im Szenenbaum, sondern in
+          <code>playfield.gd</code>s eigener Logik (SRS-Kicks, BFS, T-Spin).
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <footer>
+    <p>Tetris — Godot&nbsp;4.7.1 · GL&nbsp;Compatibility · erstellt von Claude Sonnet&nbsp;5</p>
+    <p>Quelle: aktueller Stand von projects/tetris/*.gd — kein archiviertes Wissen</p>
+  </footer>
+</div>
+
+<script>
+  // Experimental: recolor code text using the real Godot 4.7 default editor
+  // syntax palette (see the .gd-* CSS rules and the project CLAUDE.md entry
+  // for where the exact values came from), so the readability question can
+  // actually be judged instead of guessed at. A small hand-rolled tokenizer,
+  // not a real parser — good enough to color keywords/strings/numbers/
+  // comments/types/calls correctly for the GDScript shown here, not meant to
+  // be a general-purpose highlighter. Runs once per direction and caches
+  // both renderings on the element so flipping back and forth is instant.
+  var GD_FLOW = ["if","elif","else","for","while","return","break","continue","match","pass","await"];
+  var GD_DECL = ["var","const","func","class_name","extends","signal","enum","static",
+    "preload","load","and","or","not","in","is","as","void","self"];
+  var GD_TYPES = ["int","float","bool","String","Array","Dictionary","Vector2","Vector2i","Vector3i",
+    "Node2D","Control","CanvasLayer","RefCounted","Callable","Curve2D","Color"];
+
+  function gdEscape(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function gdHighlight(src){
+    var out = "", i = 0, n = src.length;
+    var flow = {}, decl = {}, types = {};
+    GD_FLOW.forEach(function(w){ flow[w] = true; });
+    GD_DECL.forEach(function(w){ decl[w] = true; });
+    GD_TYPES.forEach(function(w){ types[w] = true; });
+    while (i < n){
+      var c = src[i];
+      if (c === "#"){
+        var j = src.indexOf("\n", i);
+        if (j === -1) j = n;
+        out += '<span class="gd-c">' + gdEscape(src.slice(i, j)) + '</span>';
+        i = j;
+        continue;
+      }
+      if (c === '"' || c === "'"){
+        var q = c, k = i + 1;
+        while (k < n && src[k] !== q) k++;
+        k = Math.min(k + 1, n);
+        out += '<span class="gd-s">' + gdEscape(src.slice(i, k)) + '</span>';
+        i = k;
+        continue;
+      }
+      if (c === "@"){
+        var a = i + 1;
+        while (a < n && /[A-Za-z_]/.test(src[a])) a++;
+        out += '<span class="gd-a">' + gdEscape(src.slice(i, a)) + '</span>';
+        i = a;
+        continue;
+      }
+      if (/[0-9]/.test(c) && !/[A-Za-z_0-9]/.test(src[i-1] || "")){
+        var m = i;
+        while (m < n && /[0-9.]/.test(src[m])) m++;
+        out += '<span class="gd-n">' + gdEscape(src.slice(i, m)) + '</span>';
+        i = m;
+        continue;
+      }
+      if (/[A-Za-z_]/.test(c)){
+        var w = i;
+        while (w < n && /[A-Za-z0-9_]/.test(src[w])) w++;
+        var word = src.slice(i, w);
+        var cls = null;
+        if (flow[word]) cls = "gd-kf";
+        else if (decl[word]) cls = "gd-kd";
+        else if (types[word]) cls = "gd-t";
+        else if (src[w] === "(") cls = (/func\s+$/.test(src.slice(Math.max(0, i - 5), i)) ? "gd-fd" : "gd-fn");
+        else if (/^[A-Z]/.test(word)) cls = "gd-t";
+        out += cls ? ('<span class="' + cls + '">' + gdEscape(word) + '</span>') : gdEscape(word);
+        i = w;
+        continue;
+      }
+      out += gdEscape(c);
+      i++;
+    }
+    return out;
+  }
+
+  function toggleGodotSyntax(){
+    var on = !document.body.classList.contains('godot-syntax');
+    document.body.classList.toggle('godot-syntax', on);
+    var btn = document.getElementById('syntaxToggleBtn');
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    document.querySelectorAll('.code code').forEach(function(el){
+      if (on){
+        if (el.dataset.gdHtml === undefined){
+          el.dataset.dossierHtml = el.innerHTML;
+          el.dataset.gdHtml = gdHighlight(el.textContent);
+        }
+        el.innerHTML = el.dataset.gdHtml;
+      } else if (el.dataset.dossierHtml !== undefined){
+        el.innerHTML = el.dataset.dossierHtml;
+      }
+    });
+  }
+</script>
+<script>
+  // Section-highlight in the module rail — a plain, motion-respecting toggle,
+  // not an animated scroll effect.
+  (function(){
+    var links = Array.from(document.querySelectorAll('#rail a'));
+    var sections = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+    if (!('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        var idx = sections.indexOf(entry.target);
+        if (idx === -1) return;
+        if (entry.isIntersecting){
+          links.forEach(function(l){ l.classList.remove('active'); });
+          links[idx].classList.add('active');
+        }
+      });
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+    sections.forEach(function(s){ if (s) io.observe(s); });
+  })();
+</script>

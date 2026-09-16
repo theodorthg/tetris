@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12151f"/><stop offset="1" stop-color="#0a0c13"/>
+    </linearGradient>
+    <linearGradient id="border" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#57e6e6"/><stop offset="1" stop-color="#2ad4d4"/>
+    </linearGradient>
+  </defs>
+  <rect width="432" height="432" fill="url(#bg)"/>
+
+  <!-- faint playfield grid -->
+  <g stroke="#ffffff" stroke-opacity="0.045" stroke-width="2">
+    <line x1="108" y1="0" x2="108" y2="432"/>
+    <line x1="216" y1="0" x2="216" y2="432"/>
+    <line x1="324" y1="0" x2="324" y2="432"/>
+    <line x1="0" y1="108" x2="432" y2="108"/>
+    <line x1="0" y1="216" x2="432" y2="216"/>
+    <line x1="0" y1="324" x2="432" y2="324"/>
+  </g>
+
+  <!-- T piece (top) -->
+  <rect x="187.2" y="64.2" width="57.7" height="57.7" fill="#a64bd6"/><rect x="187.2" y="64.2" width="57.7" height="57.7" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="2.2"/><rect x="188.9" y="65.9" width="54.2" height="9.9" fill="#ffffff" fill-opacity="0.24"/>
+    <rect x="125.2" y="126.2" width="57.7" height="57.7" fill="#a64bd6"/><rect x="125.2" y="126.2" width="57.7" height="57.7" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="2.2"/><rect x="126.9" y="127.9" width="54.2" height="9.9" fill="#ffffff" fill-opacity="0.24"/>
+    <rect x="187.2" y="126.2" width="57.7" height="57.7" fill="#a64bd6"/><rect x="187.2" y="126.2" width="57.7" height="57.7" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="2.2"/><rect x="188.9" y="127.9" width="54.2" height="9.9" fill="#ffffff" fill-opacity="0.24"/>
+    <rect x="249.2" y="126.2" width="57.7" height="57.7" fill="#a64bd6"/><rect x="249.2" y="126.2" width="57.7" height="57.7" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="2.2"/><rect x="250.9" y="127.9" width="54.2" height="9.9" fill="#ffffff" fill-opacity="0.24"/>
+
+  <!-- S piece (bottom-left) -->
+  <rect x="98.0" y="260.0" width="46.0" height="46.0" fill="#3fd160"/><rect x="98.0" y="260.0" width="46.0" height="46.0" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="1.8"/><rect x="99.6" y="261.6" width="42.8" height="8.0" fill="#ffffff" fill-opacity="0.24"/>
+    <rect x="148.0" y="260.0" width="46.0" height="46.0" fill="#3fd160"/><rect x="148.0" y="260.0" width="46.0" height="46.0" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="1.8"/><rect x="149.6" y="261.6" width="42.8" height="8.0" fill="#ffffff" fill-opacity="0.24"/>
+    <rect x="48.0" y="310.0" width="46.0" height="46.0" fill="#3fd160"/><rect x="48.0" y="310.0" width="46.0" height="46.0" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="1.8"/><rect x="49.6" y="311.6" width="42.8" height="8.0" fill="#ffffff" fill-opacity="0.24"/>
+    <rect x="98.0" y="310.0" width="46.0" height="46.0" fill="#3fd160"/><rect x="98.0" y="310.0" width="46.0" height="46.0" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="1.8"/><rect x="99.6" y="311.6" width="42.8" height="8.0" fill="#ffffff" fill-opacity="0.24"/>
+
+  <!-- L piece (bottom-right) -->
+  <rect x="238.0" y="260.0" width="46.0" height="46.0" fill="#e88b2a"/><rect x="238.0" y="260.0" width="46.0" height="46.0" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="1.8"/><rect x="239.6" y="261.6" width="42.8" height="8.0" fill="#ffffff" fill-opacity="0.24"/>
+    <rect x="238.0" y="310.0" width="46.0" height="46.0" fill="#e88b2a"/><rect x="238.0" y="310.0" width="46.0" height="46.0" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="1.8"/><rect x="239.6" y="311.6" width="42.8" height="8.0" fill="#ffffff" fill-opacity="0.24"/>
+    <rect x="288.0" y="310.0" width="46.0" height="46.0" fill="#e88b2a"/><rect x="288.0" y="310.0" width="46.0" height="46.0" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="1.8"/><rect x="289.6" y="311.6" width="42.8" height="8.0" fill="#ffffff" fill-opacity="0.24"/>
+    <rect x="338.0" y="310.0" width="46.0" height="46.0" fill="#e88b2a"/><rect x="338.0" y="310.0" width="46.0" height="46.0" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="1.8"/><rect x="339.6" y="311.6" width="42.8" height="8.0" fill="#ffffff" fill-opacity="0.24"/>
+
+  <!-- rounded frame -->
+  <rect x="18" y="18" width="396" height="396" rx="58" fill="none" stroke="url(#border)" stroke-width="14"/>
+</svg>

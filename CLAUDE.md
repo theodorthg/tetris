@@ -7,7 +7,31 @@ Ergänzt die übergeordnete `CLAUDE.md` unter
 mit `tetris-windows-v1.0.4.zip`. Neu seit v1.0.3: Tastenbelegung (Settings →
 Controls), Line-Clear-Flash, T-Spin (Erkennung + Scoring + Flash-Text), Web-PWA
 entfernt, Hilfe-Bilder vergrößert (grau 40 px / Zwischenüberschriften 42 px) &
-vertikal entzerrt.
+vertikal entzerrt. Danach (noch ungetaggt): eigenes Android-App-Icon (siehe
+„App-Icon" unten) — bei Bedarf mit dem nächsten Release taggen.
+
+## App-Icon (kein Godot-Standard-Icon mehr)
+
+Wie bei pacman/galaga: drei Dateien im Projekt-Wurzelverzeichnis nach dem
+`<name>-icon *.png`-Schema, SVG-Quelle in `assets/icon_src/tetris-icon.svg`
+(`.gdignore` daneben, damit Godot die SVG nicht importiert) — Motiv: T-, S-
+und L-Tetromino in den echten Spielfarben (`pieces.gd::COLORS`), gleicher
+Zell-Look wie `playfield.gd::_draw_cell` (Fläche + heller Rand + Top-Highlight),
+dunkler Verlaufshintergrund + abgerundeter Cyan-Rahmen.
+- `tetris-icon 432x432.png` — voller Hintergrund, scharfe Bild-Ecken (Android
+  übernimmt das adaptive Masking selbst).
+- `tetris-icon 192x192.png` — auf den Rahmen zugeschnitten, transparent
+  außerhalb (für Launcher-Vorschauen, die nicht selbst maskieren).
+- `tetris-icon 432x432 mono.png` — entsättigte Graustufen-Variante fürs
+  Android-13+-„Themed Icon" (keine echte Alpha-Silhouette, nur Graustufen).
+
+`export_presets.cfg`: `launcher_icons/main_192x192`,
+`adaptive_foreground_432x432`, `adaptive_background_432x432` (bewusst dieselbe
+432er-Datei für Vorder- und Hintergrund — kein Foreground/Background-Splitting
+nötig bei einem schon opaken Vollbild) und `adaptive_monochrome_432x432`
+zeigen auf die drei Dateien statt auf `res://icon.svg`. `config/icon` selbst
+(Editor/Desktop-Fensterleiste/Web-Favicon) bleibt bewusst der Godot-Standard —
+nur der Android-Launcher bekam ein echtes Icon.
 
 ## Aufbau
 

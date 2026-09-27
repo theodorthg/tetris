@@ -1,13 +1,41 @@
 extends SceneTree
 
-## Throwaway headless checks for the board rules. Run:
+## Headless checks: every script compiles, plus the board rules. Run:
 ##   godot --headless --path . --script res://_selftest.gd
 ## Not shipped (see .gitignore-style note) — delete or keep out of exports.
 
+## Every game script, found automatically — a hand-kept list silently goes
+## stale. Walks res:// recursively, skipping addons/, tools/, android/ (Godot's
+## build template), hidden and .gdignore'd folders and _-prefixed dev scripts
+## (_selftest.gd itself, local helpers like _capture.gd).
+## A script only counts if it also COMPILES: in Godot 4 load() returns the
+## resource even when compilation failed (incl. a broken dependency), so check
+## can_instantiate() (found in mario-clone v1.1, where `load() != null` let a
+## type-inference error through with "all checks passed" and exit 0).
+const SKIP_DIRS := ["addons", "tools", "android"]
+
+func _all_scripts(dir := "res://") -> Array[String]:
+	var out: Array[String] = []
+	for f in DirAccess.get_files_at(dir):
+		if f.ends_with(".gd") and not f.begins_with("_"):
+			out.append(dir.path_join(f))
+	for d in DirAccess.get_directories_at(dir):
+		var sub := dir.path_join(d)
+		if d.begins_with(".") or d in SKIP_DIRS or FileAccess.file_exists(sub.path_join(".gdignore")):
+			continue
+		out.append_array(_all_scripts(sub))
+	return out
+
 func _init() -> void:
+	var fails := 0
+	var scripts := _all_scripts()
+	fails += _expect(scripts.size() >= 5, "found %d scripts (expect >= 5)" % scripts.size())
+	for path in scripts:
+		var s: Script = load(path)
+		fails += _expect(s != null and s.can_instantiate(), "compiles: %s" % path)
+
 	var pf := Playfield.new()
 	pf._reset_grid()
-	var fails := 0
 
 	# fill the bottom two rows except column 0 -> two line clears when col 0 fills
 	for r in [Playfield.ROWS - 1, Playfield.ROWS - 2]:

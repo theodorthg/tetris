@@ -9,12 +9,21 @@ offene Punkte stehen ggf. noch in `CLAUDE.md`.
 - [ ] Alte, von Hand hochgeladene Dateien auf itch.io löschen (macht der Nutzer: https://itch.io/game/edit/…, Seite `tetris-clone`) und beim Upload des Channels `web` „This file will be played in the browser“ setzen.
 
 Ideen für später (Einschätzung 2026-10-03, noch nicht beauftragt):
-- [ ] Versus (der Tetris-Klassiker für zwei): wer Reihen löscht, schickt
-      dem anderen Müllreihen (2→1, 3→2, Tetris→4, T-Spin mehr). Ideal
-      per Netz: jedes Gerät behält sein eigenes Hochkant-Feld, vom Gegner
-      nur eine kleine Vorschau — die Daten sind winzig (Feld + Teil),
-      keine Snapshots nötig. Gleicher Zufalls-Seed → beide bekommen
-      dieselben Teile (fair).
+- [x] v1.1.0 Online-Versus (2026-10-03): wer Reihen löscht, schickt dem
+      anderen Müllreihen (2→1, 3→2, Tetris→4, T-Spin 2/4/6; eigene
+      Löschungen verrechnen erst wartenden Müll). Jedes Gerät behält sein
+      Hochkant-Feld, vom Gegner ein Mini-Feld (~10 Updates/s), gleicher
+      Zufalls-Seed → dieselben Teile. Über das gemeinsame Relay auf
+      broesel.net (Spiel-Kennung „tetris“), auch im Browser. Revanche,
+      Pause für beide, Stand „You 2 : 1 Opponent“. Getestet lokal (zwei
+      Fenster) und RG552 ↔ Linux-PC über broesel.net.
+- [ ] Versus: eigene bebilderte Hilfeseite (Müllreihen, rote Anzeige,
+      Mini-Feld) — bisher nur der Erklärtext im Versus-Menü.
+- [ ] Versus im LAN (ohne Server, wie mario-clone v1.8) — bei Bedarf.
+- [ ] Gamepad: das Startmenü (und die übrigen alten Menüs) hat keinen
+      Standard-Fokus — auf dem RG552 kommt man nur per Touch hinein
+      (gefunden beim Versus-Test 2026-10-03; die neuen Versus-Bildschirme
+      setzen den Fokus schon). Globale Vorgabe 18.
 - [ ] Versus lokal am PC: zwei Felder nebeneinander → braucht ein breites
       Fenster (globale Vorgabe 2: Splitscreen = Querformat).
 - [ ] Zusätzliche Einzelspieler-Modi: Sprint (40 Reihen auf Zeit), Ultra

@@ -13,6 +13,7 @@ signal topped_out
 signal soft_drop_cell          ## one row gained by holding soft-drop (score +1)
 signal hard_dropped(rows: int) ## distance of a hard drop (score +2 per row)
 signal piece_spawned           ## a new active piece is in play
+signal garbage_added(rows: int) ## versus: rows pushed up from the bottom
 
 const COLS := 10
 const ROWS := 20
@@ -41,6 +42,12 @@ var _lock_accum := 0.0
 var _lock_resets := 0
 var _on_floor := false
 var _rng := RandomNumberGenerator.new()
+## Versus (v1.1): both players get the same pieces (same bag seed); the hole
+## of incoming garbage comes from a second, local generator.
+const GARBAGE := 7                ## grid value of a garbage cell
+const GARBAGE_COLOR := Color("7a7f8c")
+var incoming := 0                 ## garbage rows waiting; enter on the next lock without a clear
+var _hole_rng := RandomNumberGenerator.new()
 
 var _clearing: Array = []        ## row indices flashing; gameplay is frozen
 var _clear_t := 0.0
@@ -56,6 +63,7 @@ var _rot_lock := -1
 
 func _ready() -> void:
 	_rng.randomize()
+	_hole_rng.randomize()
 	_reset_grid()
 	set_process(true)
 
@@ -71,7 +79,13 @@ func _reset_grid() -> void:
 	_clear_t = 0.0
 
 
-func start() -> void:
+## seed >= 0: a fixed piece sequence (versus: the same for both players)
+func start(seed := -1) -> void:
+	if seed >= 0:
+		_rng.seed = seed
+	else:
+		_rng.randomize()
+	incoming = 0
 	_reset_grid()
 	_bag.clear()
 	_queue.clear()
@@ -560,6 +574,8 @@ func _lock_piece() -> void:
 		if tspin:
 			lines_cleared.emit(0, true)   # T-spin with no lines still scores
 		queue_redraw()
+		if incoming > 0 and not _insert_garbage():
+			return
 		_spawn_from_queue()
 		return
 	# freeze, flash the rows, then _process drops them and spawns the next piece
@@ -571,6 +587,50 @@ func _lock_piece() -> void:
 
 ## Count the T piece's diagonal corners that are blocked (occupied cell, or
 ## outside the well on the sides / bottom).
+func _insert_garbage() -> bool:
+	var n := mini(incoming, ROWS)
+	incoming = 0
+	var hole := _hole_rng.randi_range(0, COLS - 1)
+	var spill := false
+	for r in n:
+		if _grid[r].any(func(v): return v != -1):
+			spill = true                 # the stack is pushed out of the top
+	for i in n:
+		_grid.pop_front()
+		var row: Array = []
+		row.resize(COLS)
+		row.fill(GARBAGE)
+		row[hole] = -1
+		_grid.append(row)
+	garbage_added.emit(n)
+	queue_redraw()
+	if spill:
+		playing = false
+		topped_out.emit()
+		return false
+	return true
+
+
+## The well as bytes for the opponent's preview: 0 empty, 1..7 piece type + 1,
+## 8 garbage; the falling piece is drawn in too.
+func snapshot() -> PackedByteArray:
+	var b := PackedByteArray()
+	b.resize(COLS * ROWS)
+	for r in ROWS:
+		for c in COLS:
+			b[r * COLS + c] = _grid[r][c] + 1
+	if _type >= 0 and playing:
+		for cc in Pieces.CELLS[_type][_rot]:
+			var p: Vector2i = _pos + cc
+			if p.y >= 0 and p.y < ROWS and p.x >= 0 and p.x < COLS:
+				b[p.y * COLS + p.x] = _type + 1
+	return b
+
+
+static func cell_color(t: int) -> Color:
+	return GARBAGE_COLOR if t == GARBAGE else Pieces.COLORS[t]
+
+
 func _tspin_corners() -> int:
 	var ctr := _pos + Vector2i(1, 1)   # the T's centre sits at box (1,1)
 	var n := 0
@@ -633,7 +693,7 @@ func _draw() -> void:
 		for c in COLS:
 			var t: int = _grid[r][c]
 			if t != -1:
-				_draw_cell(c, r, Pieces.COLORS[t], 1.0)
+				_draw_cell(c, r, cell_color(t), 1.0)
 
 	# line-clear flash: bright wash that fades while the row squashes to its centre
 	if not _clearing.is_empty():
@@ -665,6 +725,10 @@ func _draw() -> void:
 				_draw_cell(pc.x, pc.y, Pieces.COLORS[_type], 1.0)
 
 	draw_rect(Rect2(0, 0, w, h), Color(1, 1, 1, 0.22), false, 2.0)
+	# versus: incoming garbage as a red bar on the left edge
+	if incoming > 0:
+		var gh := minf(incoming, ROWS) * cell
+		draw_rect(Rect2(1, h - gh, 5, gh), Color(0.95, 0.2, 0.2, 0.9))
 
 
 func _draw_cell(col: int, row: int, color: Color, alpha: float) -> void:

@@ -151,6 +151,42 @@ func _init() -> void:
 	fails += _expect(not ui._qualifies(0), "score 0 never qualifies")
 	ui.free()
 
+	# --- online versus (v1.1) ---
+	# same seed -> same pieces on both devices
+	var pa := Playfield.new()
+	var pb := Playfield.new()
+	pa._rng.seed = 4711
+	pb._rng.seed = 4711
+	var sa := []
+	var sb := []
+	for i in 21:
+		sa.append(pa._bag_next())
+		sb.append(pb._bag_next())
+	fails += _expect(sa == sb, "same seed gives the same piece sequence")
+	# garbage: 3 rows pushed up, one hole each, same column
+	pa._reset_grid()
+	pa._grid[Playfield.ROWS - 1][4] = Pieces.T
+	pa.incoming = 3
+	var ok_ins := pa._insert_garbage()
+	var holes := []
+	for r in range(Playfield.ROWS - 3, Playfield.ROWS):
+		holes.append(pa._grid[r].find(-1))
+		fails += _expect(pa._grid[r].count(Playfield.GARBAGE) == Playfield.COLS - 1, "garbage row %d has one hole" % r)
+	fails += _expect(ok_ins and holes[0] == holes[1] and holes[1] == holes[2], "garbage holes line up")
+	fails += _expect(pa._grid[Playfield.ROWS - 4][4] == Pieces.T, "stack pushed up by the garbage")
+	fails += _expect(pa.incoming == 0, "incoming garbage used up")
+	# garbage that pushes blocks out of the top tops you out
+	pa._grid[0][0] = Pieces.O
+	pa.incoming = 1
+	fails += _expect(not pa._insert_garbage(), "garbage over a full well tops out")
+	fails += _expect(pa.snapshot().size() == Playfield.COLS * Playfield.ROWS, "board snapshot is 200 bytes")
+	fails += _expect(Versus.attack_for(1, false) == 0 and Versus.attack_for(2, false) == 1
+		and Versus.attack_for(4, false) == 4 and Versus.attack_for(2, true) == 4, "attack table")
+	fails += _expect(NetLink.clean_code(" s5z2 ") == "SSZZ", "room code: look-alike digits")
+	fails += _expect(Versus._major_minor("1.1.3") == "1.1", "version check major.minor")
+	pa.free()
+	pb.free()
+
 	print("SELFTEST: %s (%d failure(s))" % ["PASS" if fails == 0 else "FAIL", fails])
 	quit(fails)
 

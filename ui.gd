@@ -11,6 +11,12 @@ signal resume_pressed
 signal restart_pressed
 signal quit_pressed
 signal settings_changed(cfg: Dictionary)
+## online versus (v1.1)
+signal versus_host
+signal versus_join(code: String)
+signal versus_cancel
+signal versus_rematch
+signal versus_leave
 
 const SETTINGS_PATH := "user://settings.cfg"
 const HOF_PATH := "user://hall_of_fame.cfg"
@@ -24,7 +30,8 @@ const SoundManager := preload("res://sound_manager.gd")
 func _snd() -> Node:
 	return get_node_or_null(^"/root/Snd")
 
-enum Screen { NONE, SPLASH, START, PAUSE, SETTINGS, SOUND, CONTROLS, HELP, GAMEOVER }
+enum Screen { NONE, SPLASH, START, PAUSE, SETTINGS, SOUND, CONTROLS, HELP, GAMEOVER,
+	VERSUS, VS_JOIN, VS_WAIT, VS_RESULT, VS_INFO }
 
 ## Remappable keyboard actions — display name + default physical keycode.
 ## Saved overrides live in user://settings.cfg [keys]; the gamepad bindings
@@ -92,6 +99,8 @@ var _help_dots: HBoxContainer
 var _help_swipe_id := -1
 var _help_swipe_x := 0.0
 
+var _vs := {}            ## versus screen data: code, won, wins, losses, mine, theirs, text, note
+var _vs_pause := false   ## the pause menu belongs to a versus round
 var _capturing := ""     ## action currently waiting for a key press, or ""
 
 
@@ -289,10 +298,134 @@ func show_start() -> void:
 	_build()
 
 
-func show_pause() -> void:
+func show_pause(versus := false, note := "") -> void:
 	_screen = Screen.PAUSE
 	_return_to = Screen.PAUSE
+	_vs_pause = versus
+	_vs["note"] = note
 	_build()
+
+
+# --- online versus screens -----------------------------------------------
+
+func show_versus() -> void:
+	_screen = Screen.VERSUS
+	_build()
+
+
+## code "" = still connecting to the server
+func show_vs_wait(code: String) -> void:
+	_screen = Screen.VS_WAIT
+	_vs["code"] = code
+	_vs["text"] = ""
+	_build()
+
+
+func show_vs_connecting() -> void:
+	_screen = Screen.VS_WAIT
+	_vs["code"] = ""
+	_vs["text"] = "Joining the game…"
+	_build()
+
+
+func show_vs_result(won: bool, wins: int, losses: int) -> void:
+	_screen = Screen.VS_RESULT
+	_vs.merge({"won": won, "wins": wins, "losses": losses, "mine": false, "theirs": false}, true)
+	_build()
+
+
+func update_vs_rematch(mine: bool, theirs: bool) -> void:
+	_vs["mine"] = mine
+	_vs["theirs"] = theirs
+	if _screen == Screen.VS_RESULT:
+		_build()
+
+
+func show_vs_info(text: String) -> void:
+	_screen = Screen.VS_INFO
+	_vs["text"] = text
+	_build()
+
+
+static func versus_available() -> bool:
+	return NetLink.relay_url() != ""
+
+
+func _versus_screen() -> void:
+	_title("VERSUS ONLINE", 34)
+	_label("Two players, each on their own device (phone, PC or browser). " +
+		"Both get the same pieces. Clear 2+ lines to send garbage rows to " +
+		"your opponent — the last one standing wins.", 15)
+	_gap(4)
+	_label("Host: you get a 4-letter code. Your opponent joins with it.", 14)
+	_gap(4)
+	_button("Host a game", versus_host.emit).call_deferred("grab_focus")
+	_button("Join with a code", func(): _screen = Screen.VS_JOIN; _build())
+	_button("Back", show_start)
+
+
+func _vs_join_screen() -> void:
+	_title("JOIN A GAME", 32)
+	_label("Enter the code shown on your opponent's screen.", 15)
+	var edit := LineEdit.new()
+	edit.max_length = 4
+	edit.placeholder_text = "CODE"
+	edit.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	edit.custom_minimum_size = Vector2(0, 52)
+	edit.add_theme_font_size_override("font_size", 30)
+	_box.add_child(edit)
+	var tidy := func(t: String):
+		var c := NetLink.clean_code(t)
+		if c != t:
+			edit.text = c
+			edit.caret_column = c.length()
+	edit.text_changed.connect(tidy)
+	var go := func():
+		var c := NetLink.clean_code(edit.text)
+		if c.length() == 4:
+			versus_join.emit(c)
+	edit.text_submitted.connect(func(_t): go.call())
+	_button("Join", go)
+	_button("Back", show_versus)
+	edit.call_deferred("grab_focus")
+
+
+func _vs_wait_screen() -> void:
+	var code := str(_vs.get("code", ""))
+	if code != "":
+		_title("WAITING FOR YOUR OPPONENT", 24)
+		_label("Tell them this code:", 16)
+		_title(code, 64)
+		_label("On their device: Versus Online > Join with a code.", 14)
+	else:
+		_title("CONNECTING", 30)
+		var t := str(_vs.get("text", ""))
+		_label(t if t != "" else "Opening a game on the online server…", 16)
+	_gap(6)
+	_button("Cancel", versus_cancel.emit).call_deferred("grab_focus")
+
+
+func _vs_result_screen() -> void:
+	var won := bool(_vs.get("won", false))
+	_title("YOU WIN!" if won else "YOU LOSE", 44)
+	_label("You  %d  :  %d  Opponent" % [int(_vs.get("wins", 0)), int(_vs.get("losses", 0))], 22)
+	_gap(6)
+	if bool(_vs.get("mine", false)):
+		_label("Waiting for your opponent…", 16)
+	elif bool(_vs.get("theirs", false)):
+		_label("Your opponent wants a rematch!", 16)
+	var b := _button("Rematch", versus_rematch.emit)
+	b.disabled = bool(_vs.get("mine", false))
+	if not b.disabled:
+		b.call_deferred("grab_focus")
+	_button("Leave", versus_leave.emit)
+
+
+func _vs_info_screen() -> void:
+	_title("VERSUS", 34)
+	_label(str(_vs.get("text", "")), 17)
+	_gap(6)
+	_button("OK", show_start).call_deferred("grab_focus")
 
 
 func show_help(from: int = Screen.START) -> void:
@@ -496,6 +629,15 @@ func handle_back() -> bool:
 		Screen.PAUSE:
 			resume_pressed.emit()
 			return true
+		Screen.VERSUS, Screen.VS_INFO:
+			show_start()
+			return true
+		Screen.VS_JOIN:
+			show_versus()
+			return true
+		Screen.VS_WAIT:
+			versus_cancel.emit()
+			return true
 	return false
 
 
@@ -516,7 +658,7 @@ func _build() -> void:
 	if _help_overlay:
 		_help_overlay.queue_free()
 		_help_overlay = null
-	var splash_screens := [Screen.START, Screen.GAMEOVER]
+	var splash_screens := [Screen.START, Screen.GAMEOVER, Screen.VERSUS, Screen.VS_JOIN, Screen.VS_WAIT, Screen.VS_INFO]
 	_bg.visible = _screen in splash_screens
 	_backdrop.visible = _bg.visible
 	_bg.modulate = Color(0.6, 0.6, 0.66)
@@ -530,17 +672,24 @@ func _build() -> void:
 			_title("TETRIS", 52)
 			_gap(10)
 			_button("Play", play_pressed.emit)
+			if versus_available():
+				_button("Versus Online", show_versus)
 			_button("How to Play", func(): show_help(Screen.START))
 			_button("Settings", func(): show_settings(Screen.START))
 			_exit_button()
 		Screen.PAUSE:
 			_title("PAUSED", 40)
+			if _vs_pause and str(_vs.get("note", "")) != "":
+				_label(str(_vs.note), 15)
 			_gap(6)
 			_button("Resume", resume_pressed.emit)
 			_button("Settings", func(): show_settings(Screen.PAUSE))
 			_button("How to Play", func(): show_help(Screen.PAUSE))
-			_button("Restart", restart_pressed.emit)
-			_exit_button()
+			if _vs_pause:
+				_button("Leave the match", versus_leave.emit)
+			else:
+				_button("Restart", restart_pressed.emit)
+				_exit_button()
 		Screen.SETTINGS:
 			_settings_screen()
 		Screen.SOUND:
@@ -549,6 +698,16 @@ func _build() -> void:
 			_controls_screen()
 		Screen.GAMEOVER:
 			_game_over_screen()
+		Screen.VERSUS:
+			_versus_screen()
+		Screen.VS_JOIN:
+			_vs_join_screen()
+		Screen.VS_WAIT:
+			_vs_wait_screen()
+		Screen.VS_RESULT:
+			_vs_result_screen()
+		Screen.VS_INFO:
+			_vs_info_screen()
 
 
 func _game_over_screen() -> void:

@@ -3,7 +3,7 @@
 Ergänzt die übergeordnete `CLAUDE.md` unter
 `~/GodotDev/learn_2d_gamedev_godot_4_0.57.0_linux/`.
 
-**Stand: v1.0.4** (`config/version`), Tag `v1.0.4` — Windows-CI grün, GitHub-Release
+**Stand: v1.1.0** — Online-Versus (siehe unten). Davor **v1.0.4** (`config/version`), Tag `v1.0.4` — Windows-CI grün, GitHub-Release
 mit `tetris-windows-v1.0.4.zip`. Neu seit v1.0.3: Tastenbelegung (Settings →
 Controls), Line-Clear-Flash, T-Spin (Erkennung + Scoring + Flash-Text), Web-PWA
 entfernt, Hilfe-Bilder vergrößert (grau 40 px / Zwischenüberschriften 42 px) &
@@ -209,6 +209,42 @@ Gamepad-Bindings bleiben unberührt.
   `main`: `TSPIN_SCORE` 400/800/1200/1600 ×Level; auch T-Spin ohne Reihe zählt.
 - **Flash-Text** (`main._flash`): „T-SPIN …" bzw. „LEVEL n" kurz übers Brett,
   `ThemeDB.fallback_font`.
+
+## Online-Versus (v1.1.0, 2026-10-03)
+
+- **Prinzip**: jedes Gerät rechnet sein eigenes Feld, nichts wird für den
+  anderen simuliert. `versus.gd` (`Versus`, Kind von Main) spricht über
+  `net_link.gd` (`NetLink`, Online-Teil aus mario-clone übernommen) mit dem
+  gemeinsamen Relay `wss://broesel.net/mario-relay` (Quelle:
+  `mario-clone/server/relay.js`, seit Relay 2.0 mit Spiel-Kennung „g“:
+  ein Tetris-Code öffnet nie einen Mario-Raum). Adresse:
+  `application/config/relay_url`, Override settings.cfg `[game] relay_url`
+  oder Umgebungsvariable `TETRIS_RELAY`. Android braucht
+  `permissions/internet=true`.
+- **Nachrichten** (`var_to_bytes([typ, daten])`): hello {v} (Major.Minor
+  gleich), start {seed, lv} (Host; gleicher Bag-Seed → dieselben Teile,
+  Startlevel des Hosts), bd {g, l, i} (`Playfield.snapshot()` = 200 Bytes
+  + Reihen + wartender Müll, ~10/s), atk n, over, again (Revanche, Host
+  startet, wenn beide wollen), pause/resume (beide), bye.
+- **Müll**: `Versus.attack_for()` 2→1, 3→2, 4→4, T-Spin 2/4/6; eigene
+  Löschungen verrechnen zuerst `Playfield.incoming`, der Rest geht raus.
+  Wartender Müll kommt beim nächsten Einrasten OHNE Löschung unten herein
+  (`_insert_garbage`, ein Loch pro Ladung aus einem eigenen Zufalls-
+  generator `_hole_rng` — der Bag-Generator muss synchron bleiben!),
+  schiebt der Müll Blöcke oben hinaus → verloren. Rote Leiste links im
+  Feld = wartender Müll. Müllzellen = Typ 7 (`Playfield.GARBAGE`, grau).
+- **Anzeige**: Gegner-Mini-Feld halb so groß rechts neben dem Feld, wenn
+  Platz ist (Desktop), sonst 50×100 im Kopfband rechts neben Punkten
+  (Hochkant/Handy) — `main._layout()` / `_draw_opponent()`.
+- **Menüs** (`ui.gd`): Start „Versus Online“ (nur mit Relay-Adresse) →
+  Host / Join with a code / Back; Warten mit großem Code; Ergebnis
+  YOU WIN / YOU LOSE + Stand + Rematch/Leave; Pause im Versus mit „Leave
+  the match“ statt Restart/Exit. Keine Bestenliste für Versus-Runden.
+- **Test**: `tools/vstest.gd` (host/guest, zwei Fenster, lokaler Relay
+  `cd ../mario-clone/server && PORT=8765 node relay.js`,
+  `TETRIS_RELAY=ws://127.0.0.1:8765`), Raum-Code über `room.txt`. Der Gast
+  kann auch gegen ein echtes Gerät spielen (Code in `room.txt` schreiben,
+  ohne `TETRIS_RELAY` → broesel.net).
 
 ## Offen / später
 

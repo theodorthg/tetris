@@ -75,6 +75,15 @@ const FLASH_TIME := 1.1
 var _flash_text := ""
 var _flash_t := 0.0
 
+# --- online versus (v1.1, versus.gd) ---
+var _versus: Versus
+var _vs_mode := false                 ## the current round is a versus round
+var _opp_cells := PackedByteArray()   ## opponent's well (Playfield.snapshot)
+var _opp_lines := 0
+var _opp_incoming := 0
+var _mini_rect := Rect2()             ## where the opponent's well is drawn
+var _mini_side := false               ## beside the board (wide screen) or in the HUD band
+
 @onready var _snd: Node = get_node_or_null(^"/root/Snd")
 
 
@@ -182,6 +191,29 @@ func _layout() -> void:
 	_level_label.size = Vector2(inner * 0.5 - lbl_gap, 20)
 	_lines_label.position = Vector2(sx + lbl_gap, hud_y + 46)
 	_lines_label.size = Vector2(inner * 0.5 - lbl_gap, 20)
+
+	# versus: the opponent's well — half size beside the board when there is
+	# room (wide window), else small in the HUD band right of the score
+	if _vs_mode:
+		var mc := maxf(floorf(cell * 0.5), 5.0)
+		var room := vp.x - right - (wx + board_w) - MARGIN
+		_mini_side = room >= mc * Playfield.COLS + 24.0
+		if _mini_side:
+			_mini_rect = Rect2(wx + board_w + 16.0, wy + 24.0, mc * Playfield.COLS, mc * Playfield.ROWS)
+		else:
+			mc = 5.0
+			var mw := mc * Playfield.COLS
+			_mini_rect = Rect2(roundf(sx + inner * 0.5 - mw), hud_y + 4.0, mw, mc * Playfield.ROWS)
+			# score / level / lines move into the part left of it
+			var li := inner - mw - 10.0
+			var lx := sx - inner * 0.5
+			var lc := lx + li * 0.5
+			_score_label.position = Vector2(lx, hud_y + 4)
+			_score_label.size = Vector2(li, 36)
+			_level_label.position = Vector2(lx, hud_y + 46)
+			_level_label.size = Vector2(li * 0.5 - 4.0, 20)
+			_lines_label.position = Vector2(lc + 4.0, hud_y + 46)
+			_lines_label.size = Vector2(li * 0.5 - 4.0, 20)
 	queue_redraw()
 
 
@@ -221,6 +253,23 @@ func _build() -> void:
 	_ui.restart_pressed.connect(_on_restart)
 	_ui.quit_pressed.connect(func(): get_tree().quit())
 	_ui.settings_changed.connect(_on_settings_changed)
+
+	_versus = Versus.new()
+	add_child(_versus)
+	_versus.room_ready.connect(func(code): _ui.show_vs_wait(code))
+	_versus.round_started.connect(_on_vs_round)
+	_versus.opponent_board.connect(_on_vs_board)
+	_versus.attacked.connect(_on_vs_attacked)
+	_versus.round_won.connect(_on_vs_won)
+	_versus.paused_changed.connect(_on_vs_paused)
+	_versus.rematch_changed.connect(func(mine, theirs): _ui.update_vs_rematch(mine, theirs))
+	_versus.ended.connect(_on_vs_ended)
+	_ui.versus_host.connect(_vs_host)
+	_ui.versus_join.connect(_vs_join)
+	_ui.versus_cancel.connect(_vs_leave)
+	_ui.versus_rematch.connect(func(): _versus.want_rematch())
+	_ui.versus_leave.connect(_vs_leave)
+	_field.garbage_added.connect(func(_n): _sfx("drop"))
 
 	_update_hud()
 
@@ -280,7 +329,10 @@ func _hud_buttons(vis: bool) -> void:
 	_hold_btn.visible = vis
 
 
-func _start_game() -> void:
+func _start_game(seed := -1) -> void:
+	if seed < 0:
+		_vs_mode = false
+	_layout()
 	_start_level = int(_ui.settings.start_level)
 	_field.ghost_enabled = bool(_ui.settings.ghost)
 	_score = 0
@@ -294,12 +346,23 @@ func _start_game() -> void:
 	_ui.hide_all()
 	_hud_buttons(true)
 	_field.fall_interval = _fall_interval_for(_level)
-	_field.start()
+	_field.start(seed)
 	_update_hud()
 	queue_redraw()
 
 
 func _on_top_out() -> void:
+	if _vs_mode:
+		_state = State.OVER
+		_field.stop()
+		_field.clear_suggestion()
+		_pending_drop = false
+		_hud_buttons(false)
+		_sfx("over")
+		_versus.lost()
+		_ui.show_vs_result(false, _versus.wins, _versus.losses)
+		queue_redraw()
+		return
 	_state = State.OVER
 	_field.stop()
 	_field.clear_suggestion()
@@ -313,6 +376,15 @@ func _on_top_out() -> void:
 func _pause() -> void:
 	if _state != State.PLAYING:
 		return
+	if _vs_mode:
+		_versus.set_paused(true)       # pauses both (-> _on_vs_paused)
+		return
+	_do_pause()
+
+
+func _do_pause(note := "") -> void:
+	if _state != State.PLAYING:
+		return
 	_state = State.PAUSED
 	_field.set_process(false)
 	_field.clear_suggestion()
@@ -320,7 +392,7 @@ func _pause() -> void:
 	_touch_id = -1
 	_pending_drop = false
 	_hud_buttons(false)
-	_ui.show_pause()
+	_ui.show_pause(_vs_mode, note)
 	queue_redraw()
 
 
@@ -336,6 +408,15 @@ func _on_restart() -> void:
 func _resume() -> void:
 	if _state != State.PAUSED:
 		return
+	if _vs_mode:
+		_versus.set_paused(false)      # resumes both (-> _on_vs_paused)
+		return
+	_do_resume()
+
+
+func _do_resume() -> void:
+	if _state != State.PAUSED:
+		return
 	_state = State.PLAYING
 	_ui.hide_all()
 	_hud_buttons(true)
@@ -349,11 +430,106 @@ func _on_settings_changed(cfg: Dictionary) -> void:
 		_start_level = int(cfg.get("start_level", 1))
 
 
+# --- online versus ------------------------------------------------------
+
+func _vs_host() -> void:
+	_ui.show_vs_wait("")
+	if _versus.host(int(_ui.settings.start_level)) != OK:
+		_on_vs_ended("No online server is set up.")
+
+
+func _vs_join(code: String) -> void:
+	_ui.show_vs_connecting()
+	if _versus.join(code) != OK:
+		_on_vs_ended("No online server is set up.")
+
+
+func _vs_leave() -> void:
+	_versus.leave()
+	_vs_end_round()
+	_ui.show_start()
+
+
+func _vs_end_round() -> void:
+	_vs_mode = false
+	_state = State.START
+	_field.stop()
+	_field.clear_suggestion()
+	_field.incoming = 0
+	_hud_buttons(false)
+	_pending_drop = false
+	_opp_cells = PackedByteArray()
+	_layout()
+
+
+func _on_vs_round(seed: int, level: int) -> void:
+	_vs_mode = true
+	_opp_cells = PackedByteArray()
+	_opp_lines = 0
+	_opp_incoming = 0
+	var keep: int = _ui.settings.start_level
+	_ui.settings.start_level = level           # both start on the host's level
+	_start_game(seed)
+	_ui.settings.start_level = keep
+	_flash("VERSUS  %d : %d" % [_versus.wins, _versus.losses])
+
+
+func _on_vs_board(cells: PackedByteArray, lines: int, incoming: int) -> void:
+	_opp_cells = cells
+	_opp_lines = lines
+	_opp_incoming = incoming
+	queue_redraw()
+
+
+func _on_vs_attacked(rows: int) -> void:
+	if _state in [State.PLAYING, State.PAUSED]:
+		_field.incoming += rows
+		_field.queue_redraw()
+		_versus.board_changed()
+
+
+func _on_vs_won() -> void:
+	_state = State.OVER
+	_field.stop()
+	_field.clear_suggestion()
+	_pending_drop = false
+	_hud_buttons(false)
+	_sfx("lines")
+	_ui.show_vs_result(true, _versus.wins, _versus.losses)
+	queue_redraw()
+
+
+func _on_vs_paused(p: bool, by_me: bool) -> void:
+	if p:
+		_do_pause("" if by_me else "Your opponent paused the game.")
+	elif _state == State.PAUSED:
+		_do_resume()
+
+
+func _on_vs_ended(text: String) -> void:
+	_vs_end_round()
+	_ui.show_vs_info(text)
+
+
+## What the opponent gets ~10 times a second (Versus "bd").
+func versus_board() -> Dictionary:
+	return {"g": _field.snapshot(), "l": _lines, "i": _field.incoming}
+
+
 # --- scoring -----------------------------------------------------------
 
 const TSPIN_SCORE := [400, 800, 1200, 1600]   ## T-spin: 0, 1, 2, 3 lines
 
 func _on_lines_cleared(rows: int, tspin: bool) -> void:
+	if _vs_mode:
+		# own clears first cancel garbage that is still waiting, the rest goes over
+		var atk := Versus.attack_for(rows, tspin)
+		var cancel := mini(atk, _field.incoming)
+		_field.incoming -= cancel
+		_field.queue_redraw()
+		_versus.send_attack(atk - cancel)
+		if atk - cancel > 0 and not tspin:      # (a T-spin shows its own text)
+			_flash("%d SENT" % (atk - cancel))
 	if tspin:
 		_add_score(TSPIN_SCORE[clampi(rows, 0, 3)] * _level)
 		_flash(["T-SPIN", "T-SPIN SINGLE", "T-SPIN DOUBLE", "T-SPIN TRIPLE"][clampi(rows, 0, 3)])
@@ -561,6 +737,8 @@ func _process(dt: float) -> void:
 		queue_redraw()
 	if _state != State.PLAYING:
 		return
+	if _vs_mode:
+		_versus.board_changed()
 	if _touch_id >= 0:
 		_touch_time += dt
 	if _pending_drop:
@@ -619,6 +797,8 @@ func _draw() -> void:
 	var q := _field.queue_types()
 	if q.size() > 0:
 		_draw_piece_in_box(q[0], _next_box)
+	if _vs_mode:
+		_draw_opponent()
 
 	if _flash_t > 0.0 and _flash_text != "":
 		var p := _flash_t / FLASH_TIME               # 1 → 0
@@ -631,6 +811,32 @@ func _draw() -> void:
 		var pos := Vector2(cx, cy)
 		draw_string_outline(font, pos, _flash_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 6, Color(0, 0, 0, a * 0.8))
 		draw_string(font, pos, _flash_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1.0, 0.85, 0.30, a))
+
+
+## The opponent's well (versus), from their last "bd" message.
+func _draw_opponent() -> void:
+	var r := _mini_rect
+	var mc := r.size.x / Playfield.COLS
+	draw_rect(r, Color(0.06, 0.04, 0.06, 1.0))
+	if _opp_cells.size() == Playfield.COLS * Playfield.ROWS:
+		for i in _opp_cells.size():
+			var t := int(_opp_cells[i]) - 1
+			if t < 0:
+				continue
+			var p := r.position + Vector2((i % Playfield.COLS) * mc, (i / Playfield.COLS) * mc)
+			draw_rect(Rect2(p + Vector2(0.5, 0.5), Vector2(mc - 1.0, mc - 1.0)), Playfield.cell_color(t))
+	if _opp_incoming > 0:
+		var gh := minf(_opp_incoming, Playfield.ROWS) * mc
+		draw_rect(Rect2(r.position.x, r.end.y - gh, 2.0, gh), Color(0.95, 0.2, 0.2, 0.9))
+	draw_rect(r, Color(1.0, 0.45, 0.45, 0.55), false, 1.0)
+	var font := ThemeDB.fallback_font
+	var fs := 11 if not _mini_side else 14
+	var cap := "OPPONENT  %d" % _opp_lines if _mini_side else "%d" % _opp_lines
+	if _mini_side:
+		draw_string(font, r.position + Vector2(0, -6), cap, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 0.75, 0.75))
+	else:
+		draw_string(font, Vector2(r.position.x - 4.0 - font.get_string_size(cap, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x,
+			r.end.y - 2.0), cap, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 0.75, 0.75))
 
 
 func _draw_preview_frame(box: Rect2) -> void:

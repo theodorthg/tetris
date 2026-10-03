@@ -184,6 +184,11 @@ func _init() -> void:
 		and Versus.attack_for(4, false) == 4 and Versus.attack_for(2, true) == 4, "attack table")
 	fails += _expect(NetLink.clean_code(" s5z2 ") == "SSZZ", "room code: look-alike digits")
 	fails += _expect(Versus._major_minor("1.1.3") == "1.1", "version check major.minor")
+	# v1.2 LAN: same ports as mario-clone (one firewall rule for both), own tag
+	fails += _expect(NetLink.PORT == 47111 and NetLink.DISCOVERY_PORT == 47110
+		and NetLink.GUEST_PORT == 47112, "LAN ports = mario-clone's (47110-47112)")
+	fails += _expect(NetLink.MAGIC != "MCLONE-LAN-1", "own LAN discovery tag")
+	fails += _expect(NetLink.lan_possible(), "LAN offered in native builds")
 	pa.free()
 	pb.free()
 

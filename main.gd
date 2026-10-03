@@ -267,6 +267,10 @@ func _build() -> void:
 	_versus.rematch_changed.connect(func(mine, theirs): _ui.update_vs_rematch(mine, theirs))
 	_versus.ended.connect(_on_vs_ended)
 	_ui.versus_host.connect(_vs_host)
+	_ui.versus_host_lan.connect(_vs_host_lan)
+	_ui.versus_search_lan.connect(func(): _versus.search_lan())
+	_ui.versus_join_lan.connect(_vs_join_lan)
+	_versus.lan_hosts_changed.connect(func(h): _ui.update_lan_hosts(h))
 	_ui.versus_join.connect(_vs_join)
 	_ui.versus_cancel.connect(_vs_leave)
 	_ui.versus_rematch.connect(func(): _versus.want_rematch())
@@ -438,6 +442,19 @@ func _vs_host() -> void:
 	_ui.show_vs_wait("")
 	if _versus.host(int(_ui.settings.start_level)) != OK:
 		_on_vs_ended("No online server is set up.")
+
+
+func _vs_host_lan() -> void:
+	if _versus.host_lan(int(_ui.settings.start_level)) != OK:
+		_on_vs_ended("Can't open a LAN game here (port 47111 busy? Another game hosting?).")
+		return
+	_ui.show_vs_lan_wait(NetLink.local_ips())
+
+
+func _vs_join_lan(ip: String) -> void:
+	_ui.show_vs_connecting("Connecting to %s…" % ip)
+	if _versus.join_lan(ip) != OK:
+		_on_vs_ended("Can't connect to %s." % ip)
 
 
 func _vs_join(code: String) -> void:

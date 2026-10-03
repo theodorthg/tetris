@@ -1,7 +1,8 @@
 class_name Versus
 extends Node
 
-## Online versus (v1.1): two players, each on their own device, each runs
+## Online versus (v1.1) and LAN / Wi-Fi versus (v1.2, ENet + discovery,
+## see NetLink): two players, each on their own device, each runs
 ## their own well — nothing is simulated for the other side. What goes over
 ## the line (NetLink, via the relay):
 ##   hello {v}          both, on connect — major.minor must match
@@ -23,6 +24,7 @@ signal round_won                    ## the opponent topped out
 signal paused_changed(paused: bool, by_me: bool)
 signal rematch_changed(mine: bool, theirs: bool)
 signal ended(text: String)          ## connection gone / refused: back to the menu
+signal lan_hosts_changed(hosts: Dictionary)   ## LAN guest: ip -> name
 
 const ATTACK := [0, 0, 1, 2, 4]
 const TSPIN_ATTACK := [0, 2, 4, 6]
@@ -38,6 +40,10 @@ var _again_theirs := false
 var _board_t := 0.0
 var _board_dirty := false
 var _start_level := 1
+var discovery: NetLink.Discovery   ## LAN: host beacon / guest search
+var _lan_ip := ""
+var _hosts_seen := {}
+const FIREWALL_HINT := "Same network? A host PC with a firewall must allow UDP 47110-47111 — or play Online, that always works."
 
 
 static func attack_for(rows: int, tspin: bool) -> int:
@@ -63,7 +69,46 @@ func join(code: String) -> int:
 	return link.join_online(NetLink.relay_url(), code)
 
 
+## LAN host: open the game port and answer searches.
+func host_lan(level: int) -> int:
+	_reset()
+	_start_level = level
+	link = NetLink.new()
+	var err := link.host_lan()
+	if err != OK:
+		link = null
+		return err
+	discovery = NetLink.Discovery.new()
+	discovery.start_host(NetLink.device_name())
+	return OK
+
+
+## LAN guest, step 1: look for hosts (lan_hosts_changed while searching).
+func search_lan() -> void:
+	_reset()
+	_hosts_seen = {}
+	discovery = NetLink.Discovery.new()
+	discovery.start_search()
+
+
+## LAN guest, step 2: connect to a host.
+func join_lan(ip: String) -> int:
+	_stop_discovery()
+	if link:
+		link.close()
+	link = NetLink.new()
+	_lan_ip = ip
+	return link.join_lan(ip)
+
+
+func _stop_discovery() -> void:
+	if discovery:
+		discovery.stop()
+	discovery = null
+
+
 func _reset() -> void:
+	_stop_discovery()
 	if link:
 		link.close()
 	link = null
@@ -77,6 +122,7 @@ func _reset() -> void:
 
 ## Leave on purpose (menu "Leave"): tell the other side, close.
 func leave() -> void:
+	_stop_discovery()
 	if link:
 		link.send("bye", 0)
 		link.close()
@@ -85,6 +131,15 @@ func leave() -> void:
 
 
 func _process(delta: float) -> void:
+	if discovery:
+		discovery.poll(delta)
+		if not discovery.hosting:
+			var now := {}
+			for ip in discovery.found:
+				now[ip] = str(discovery.found[ip].name)
+			if now != _hosts_seen:
+				_hosts_seen = now
+				lan_hosts_changed.emit(now)
 	if link == null:
 		return
 	for ev in link.poll():
@@ -92,9 +147,13 @@ func _process(delta: float) -> void:
 			"room":
 				room_ready.emit(ev[1])
 			"connect":
+				_stop_discovery()
 				link.send("hello", {"v": NetLink.version()})
 			"disconnect":
-				_end("Your opponent left the game.")
+				if link.ever_connected:
+					_end("Your opponent left the game.")
+				else:
+					_end("No answer from %s.\n%s" % [_lan_ip, FIREWALL_HINT])
 				return
 			"error", "closed":
 				_end(ev[1])
@@ -114,6 +173,7 @@ func _process(delta: float) -> void:
 
 
 func _end(text: String) -> void:
+	_stop_discovery()
 	if link:
 		link.close()
 	link = null

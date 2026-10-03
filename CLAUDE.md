@@ -3,7 +3,7 @@
 Ergänzt die übergeordnete `CLAUDE.md` unter
 `~/GodotDev/learn_2d_gamedev_godot_4_0.57.0_linux/`.
 
-**Stand: v1.1.2** — Online-Versus (v1.1.0), Gamepad in allen Menüs + Versus-Hilfe (v1.1.1), Hilfeseite „Gamepad“ (v1.1.2). Davor **v1.0.4** (`config/version`), Tag `v1.0.4` — Windows-CI grün, GitHub-Release
+**Stand: v1.2.0** — Online-Versus (v1.1.0), Gamepad in allen Menüs + Versus-Hilfe (v1.1.1), Hilfeseite „Gamepad“ (v1.1.2), Versus im LAN / Wi-Fi (v1.2.0). Davor **v1.0.4** (`config/version`), Tag `v1.0.4` — Windows-CI grün, GitHub-Release
 mit `tetris-windows-v1.0.4.zip`. Neu seit v1.0.3: Tastenbelegung (Settings →
 Controls), Line-Clear-Flash, T-Spin (Erkennung + Scoring + Flash-Text), Web-PWA
 entfernt, Hilfe-Bilder vergrößert (grau 40 px / Zwischenüberschriften 42 px) &
@@ -253,6 +253,26 @@ Gamepad-Bindings bleiben unberührt.
   `TETRIS_RELAY=ws://127.0.0.1:8765`), Raum-Code über `room.txt`. Der Gast
   kann auch gegen ein echtes Gerät spielen (Code in `room.txt` schreiben,
   ohne `TETRIS_RELAY` → broesel.net).
+
+## Versus im LAN / Wi-Fi (v1.2.0, 2026-10-03)
+
+- Gleiche Nachrichten wie online, nur über ENet (`NetLink.host_lan` /
+  `join_lan`, ein zuverlässiger Kanal). Ports wie mario-clone: Spiel UDP
+  47111, Suche 47110 (Host lauscht) / 47112 (Gast lauscht) — eine Firewall-
+  Regel am Host-PC deckt beide Spiele ab; `NetLink.MAGIC` „TETRIS-LAN-1“
+  hält die Suchen getrennt. `NetLink.Discovery` 1:1 aus mario-clone (Beacon,
+  FIND-Broadcast + 127.0.0.1, /24-Abfrage im Thread alle 5 s). Nur nativ
+  (`NetLink.lan_possible()`), im Browser nur Online.
+- Menü: Start „Versus“ → Host online / Join online with a code / Host in
+  LAN / Wi-Fi / Join in LAN / Wi-Fi. LAN-Host zeigt seine Adresse(n) +
+  Firewall-Hinweis; Beitreten listet gefundene Spiele als Knöpfe
+  („SM-T825 (192.168.178.41)“, 127.0.0.1 nur ohne Doppel) + Adressfeld
+  (`last_host` in settings.cfg). Keine Antwort → ENet-Timeout 8 s →
+  „No answer from …“ + Hinweis (`Versus.FIREWALL_HINT`, unterschieden über
+  `NetLink.ever_connected`).
+- Startfokus nie auf ein Textfeld (öffnet sonst die Bildschirmtastatur).
+- Test: `tools/vstest.gd` Rollen `lanhost` / `languest` (ohne Relay) und
+  `lanbad` (Adresse ohne Host).
 
 ## Gamepad-Menüs (v1.1.1, 2026-10-03)
 

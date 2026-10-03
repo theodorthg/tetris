@@ -6,6 +6,8 @@ extends SceneTree
 ##   TETRIS_RELAY=ws://127.0.0.1:8765 godot --path . --script res://tools/vstest.gd -- guest <dir>
 ## The host writes the room code to <dir>/room.txt; both take screenshots
 ## and print "VS ..." lines. Run with --audio-driver Dummy.
+## v1.2 LAN: roles "lanhost" / "languest" (no relay; the guest finds the host
+## through the discovery — on one machine via the 127.0.0.1 query).
 
 var role := "host"
 var outdir := "/tmp"
@@ -52,7 +54,13 @@ func _run() -> void:
 	await _wait(0.5)
 	main._ui.show_versus()
 	await shot("menu")
-	if role == "host":
+	if role == "lanbad":
+		# nobody at that address: a clear message after ~8 s, not a hang
+		main._ui._lan_join("192.168.178.254")
+		await until(func(): return main._ui._screen == Ui.Screen.VS_INFO, 20.0)
+		print("VS lanbad: ", main._ui._vs.get("text", ""))
+		await shot("noanswer")
+	elif role in ["host", "lanhost"]:
 		await host()
 	else:
 		await guest()
@@ -60,13 +68,20 @@ func _run() -> void:
 	quit()
 
 func host() -> void:
-	main._vs_host()
-	await until(func(): return main._versus.link and main._versus.link.room_code != "")
-	var code: String = main._versus.link.room_code
-	FileAccess.open(outdir + "/room.txt", FileAccess.WRITE).store_string(code)
-	await _wait(0.3)
-	await shot("code")
-	print("VS host code ", code)
+	if role == "lanhost":
+		main._ui._last_btn.clear()
+		main._vs_host_lan()
+		await _wait(0.5)
+		await shot("lanwait")
+		print("VS lanhost ips ", NetLink.local_ips())
+	else:
+		main._vs_host()
+		await until(func(): return main._versus.link and main._versus.link.room_code != "")
+		var code: String = main._versus.link.room_code
+		FileAccess.open(outdir + "/room.txt", FileAccess.WRITE).store_string(code)
+		await _wait(0.3)
+		await shot("code")
+		print("VS host code ", code)
 	await until(func(): return main._vs_mode, 20.0)
 	info("round 1")
 	for i in 4:
@@ -96,14 +111,26 @@ func host() -> void:
 	await shot("left")
 
 func guest() -> void:
-	await until(func(): return FileAccess.file_exists(outdir + "/room.txt"), 20.0)
-	await _wait(0.3)
-	var code := FileAccess.get_file_as_string(outdir + "/room.txt").to_lower()   # typed in lower case
-	main._ui._screen = Ui.Screen.VS_JOIN
-	main._ui._build()
-	await _wait(0.3)
-	await shot("join")
-	main._vs_join(code)
+	if role == "languest":
+		main._ui._vs["hosts"] = {}
+		main._ui._screen = Ui.Screen.VS_LAN_JOIN
+		main._versus.search_lan()
+		main._ui._build()
+		var found := await until(func(): return not main._ui._vs.get("hosts", {}).is_empty(), 15.0)
+		await _wait(0.3)
+		await shot("lanfound")
+		print("VS languest found ", main._ui._vs.get("hosts", {}), " ok=", found)
+		var ip: String = main._ui._vs.hosts.keys()[0]
+		main._ui._lan_join(ip)
+	else:
+		await until(func(): return FileAccess.file_exists(outdir + "/room.txt"), 20.0)
+		await _wait(0.3)
+		var code := FileAccess.get_file_as_string(outdir + "/room.txt").to_lower()   # typed in lower case
+		main._ui._screen = Ui.Screen.VS_JOIN
+		main._ui._build()
+		await _wait(0.3)
+		await shot("join")
+		main._vs_join(code)
 	await until(func(): return main._vs_mode, 10.0)
 	info("round 1")
 	await until(func(): return main._field.incoming > 0, 15.0)

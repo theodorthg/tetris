@@ -20,7 +20,13 @@ Ideen für später (Einschätzung 2026-10-03, noch nicht beauftragt):
 - [x] v1.1.1: Versus-Hilfeseite `versus` (beide Hilfe-Folgen, vor „Goal“):
       eigenes Feld mit 2 Reihen → Pfeil → Gegner mit grauen Müllreihen +
       roter Leiste, Angriffstabelle, Host/Join.
-- [ ] Versus im LAN (ohne Server, wie mario-clone v1.8) — bei Bedarf.
+- [x] v1.2.0 Versus im LAN / Wi-Fi (ohne Server): ENet wie mario-clone
+      v1.8 auf DENSELBEN Ports 47110–47112 (eine Firewall-Regel für beide
+      Spiele), eigene Such-Kennung „TETRIS-LAN-1“; Gast findet den Host
+      selbst (Broadcast + /24-Abfrage im Thread, braucht nie eine
+      Freigabe), sonst Adresse eintippen (`last_host`). Getestet lokal
+      (zwei Fenster, inkl. falscher Adresse → Meldung nach ~8 s) und
+      Galaxy Tab S3 ↔ RG552 im WLAN.
 - [x] v1.1.1 Gamepad in allen Menüs (am RG552 mit echten Pad-Signalen
       geprüft): `ui_accept`/`ui_cancel` hatten keine Pad-Belegung (A/B
       ergänzt, device -1); jeder Bildschirm bekommt einen Startfokus

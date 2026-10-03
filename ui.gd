@@ -17,6 +17,10 @@ signal versus_join(code: String)
 signal versus_cancel
 signal versus_rematch
 signal versus_leave
+## LAN / Wi-Fi versus (v1.2)
+signal versus_host_lan
+signal versus_search_lan
+signal versus_join_lan(ip: String)
 
 const SETTINGS_PATH := "user://settings.cfg"
 const HOF_PATH := "user://hall_of_fame.cfg"
@@ -31,7 +35,7 @@ func _snd() -> Node:
 	return get_node_or_null(^"/root/Snd")
 
 enum Screen { NONE, SPLASH, START, PAUSE, SETTINGS, SOUND, CONTROLS, HELP, GAMEOVER,
-	VERSUS, VS_JOIN, VS_WAIT, VS_RESULT, VS_INFO }
+	VERSUS, VS_JOIN, VS_WAIT, VS_RESULT, VS_INFO, VS_LAN_JOIN, VS_LAN_WAIT }
 
 ## Remappable keyboard actions — display name + default physical keycode.
 ## Saved overrides live in user://settings.cfg [keys]; the gamepad bindings
@@ -60,7 +64,7 @@ const HELP_MOUSE := [
 	{"file": "hud",       "title": "The buttons"},
 	{"file": "keyboard",  "title": "Keyboard"},
 	{"file": "gamepad",   "title": "Gamepad"},
-	{"file": "versus",    "title": "Versus online"},
+	{"file": "versus",    "title": "Versus"},
 	{"file": "goal",      "title": "Goal & scoring"},
 ]
 const HELP_TOUCH := [
@@ -68,7 +72,7 @@ const HELP_TOUCH := [
 	{"file": "aim-touch", "title": "Aim & auto-rotate"},
 	{"file": "hud",       "title": "The buttons"},
 	{"file": "gamepad",   "title": "Gamepad"},
-	{"file": "versus",    "title": "Versus online"},
+	{"file": "versus",    "title": "Versus"},
 	{"file": "goal",      "title": "Goal & scoring"},
 ]
 const HELP_SWIPE_MIN := 60.0
@@ -349,11 +353,103 @@ func show_vs_wait(code: String) -> void:
 	_build()
 
 
-func show_vs_connecting() -> void:
+func show_vs_connecting(text := "Joining the game…") -> void:
 	_screen = Screen.VS_WAIT
 	_vs["code"] = ""
-	_vs["text"] = "Joining the game…"
+	_vs["text"] = text
 	_build()
+
+
+func show_vs_lan_wait(ips: Array) -> void:
+	_screen = Screen.VS_LAN_WAIT
+	_vs["ips"] = ips
+	_build()
+
+
+## LAN guest: the hosts found so far (ip -> name); rebuilt while searching
+func update_lan_hosts(hosts: Dictionary) -> void:
+	_vs["hosts"] = hosts
+	if _screen != Screen.VS_LAN_JOIN:
+		return
+	var fo := get_viewport().gui_get_focus_owner()
+	_vs["edit_focus"] = fo is LineEdit
+	_build()
+
+
+static func _last_host() -> String:
+	var cf := ConfigFile.new()
+	cf.load("user://settings.cfg")
+	return str(cf.get_value("game", "last_host", ""))
+
+
+static func _save_last_host(ip: String) -> void:
+	var cf := ConfigFile.new()
+	cf.load("user://settings.cfg")
+	cf.set_value("game", "last_host", ip)
+	cf.save("user://settings.cfg")
+
+
+func _lan_join(ip: String) -> void:
+	ip = ip.strip_edges()
+	if ip == "":
+		return
+	_save_last_host(ip)
+	versus_join_lan.emit(ip)
+
+
+func _vs_lan_join_screen() -> void:
+	_title("JOIN IN LAN / WI-FI", 30)
+	var hosts: Dictionary = _vs.get("hosts", {})
+	if hosts.is_empty():
+		_label("Looking for games in your network…", 16)
+	else:
+		_label("Found — pick one:", 16)
+		for ip in hosts:
+			# the same device also answers on 127.0.0.1 (tests): list it once
+			if ip == "127.0.0.1" and hosts.keys().any(func(o): return o != ip and hosts[o] == hosts[ip]):
+				continue
+			var addr: String = ip
+			_button("%s  (%s)" % [hosts[ip], addr], func(): _lan_join(addr))
+	_gap(2)
+	_label("Or type the address shown on the host:", 14)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	_box.add_child(row)
+	var edit := LineEdit.new()
+	edit.max_length = 15
+	edit.placeholder_text = "192.168.…"
+	edit.text = str(_vs.get("ip", _last_host()))
+	edit.custom_minimum_size = Vector2(0, 46)
+	edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	edit.add_theme_font_size_override("font_size", 20)
+	edit.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER_DECIMAL
+	row.add_child(edit)
+	edit.text_changed.connect(func(t): _vs["ip"] = t)
+	edit.text_submitted.connect(func(t): _lan_join(t))
+	var go := Button.new()
+	go.text = "Connect"
+	go.custom_minimum_size = Vector2(120, 46)
+	go.add_theme_font_size_override("font_size", 18)
+	row.add_child(go)
+	go.pressed.connect(func(): _lan_join(edit.text))
+	_label("No admin rights on the host PC (school network)? Play Online.", 13)
+	_button("Back", func(): versus_cancel.emit(); show_versus())
+	if bool(_vs.get("edit_focus", false)):
+		_vs["edit_focus"] = false
+		edit.call_deferred("grab_focus")
+		edit.set_deferred("caret_column", edit.text.length())
+
+
+func _vs_lan_wait_screen() -> void:
+	_title("WAITING FOR YOUR OPPONENT", 24)
+	_label("On their device: Versus > Join in LAN / Wi-Fi.", 15)
+	_label("This game shows up there by itself, or type its address:", 14)
+	var ips: Array = _vs.get("ips", [])
+	_title("  ".join(ips) if not ips.is_empty() else "(no network)", 34)
+	_label("Host is a PC with a firewall? Allow UDP 47110-47111 there — " +
+		"or play Online, that always works.", 13)
+	_gap(4)
+	_button("Cancel", versus_cancel.emit).call_deferred("grab_focus")
 
 
 func show_vs_result(won: bool, wins: int, losses: int) -> void:
@@ -380,15 +476,24 @@ static func versus_available() -> bool:
 
 
 func _versus_screen() -> void:
-	_title("VERSUS ONLINE", 34)
-	_label("Two players, each on their own device (phone, PC or browser). " +
-		"Both get the same pieces. Clear 2+ lines to send garbage rows to " +
-		"your opponent — the last one standing wins.", 15)
-	_gap(4)
-	_label("Host: you get a 4-letter code. Your opponent joins with it.", 14)
-	_gap(4)
-	_button("Host a game", versus_host.emit).call_deferred("grab_focus")
-	_button("Join with a code", func(): _screen = Screen.VS_JOIN; _build())
+	_title("VERSUS", 38)
+	_label("Two players, each on their own device. Both get the same pieces. " +
+		"Clear 2+ lines to send garbage rows to your opponent — the last " +
+		"one standing wins.", 15)
+	_gap(2)
+	if versus_available():
+		_label("Online (anywhere, also in the browser): a 4-letter code.", 13)
+		_button("Host online", versus_host.emit)
+		_button("Join online with a code", func(): _screen = Screen.VS_JOIN; _build())
+	if NetLink.lan_possible():
+		_label("LAN / Wi-Fi (same network, no server):", 13)
+		_button("Host in LAN / Wi-Fi", versus_host_lan.emit)
+		_button("Join in LAN / Wi-Fi", func():
+			_vs["hosts"] = {}
+			_vs.erase("ip")
+			_screen = Screen.VS_LAN_JOIN
+			versus_search_lan.emit()
+			_build())
 	_button("Back", show_start)
 
 
@@ -424,7 +529,7 @@ func _vs_wait_screen() -> void:
 		_title("WAITING FOR YOUR OPPONENT", 24)
 		_label("Tell them this code:", 16)
 		_title(code, 64)
-		_label("On their device: Versus Online > Join with a code.", 14)
+		_label("On their device: Versus > Join online with a code.", 14)
 	else:
 		_title("CONNECTING", 30)
 		var t := str(_vs.get("text", ""))
@@ -663,8 +768,12 @@ func handle_back() -> bool:
 		Screen.VS_JOIN:
 			show_versus()
 			return true
-		Screen.VS_WAIT:
+		Screen.VS_WAIT, Screen.VS_LAN_WAIT:
 			versus_cancel.emit()
+			return true
+		Screen.VS_LAN_JOIN:
+			versus_cancel.emit()
+			show_versus()
 			return true
 	return false
 
@@ -712,6 +821,12 @@ func _focus_default() -> void:
 		if back_to != "" and c is Button and (c as Button).text == back_to:
 			(c as Control).grab_focus()
 			return
+	# never a text field on its own: on a phone / handheld that pops up the
+	# on-screen keyboard (a screen that wants it focuses it itself)
+	for c in list:
+		if not (c is LineEdit):
+			(c as Control).grab_focus()
+			return
 	(list[0] as Control).grab_focus()
 
 
@@ -725,7 +840,7 @@ func _build() -> void:
 	if _help_overlay:
 		_help_overlay.queue_free()
 		_help_overlay = null
-	var splash_screens := [Screen.START, Screen.GAMEOVER, Screen.VERSUS, Screen.VS_JOIN, Screen.VS_WAIT, Screen.VS_INFO]
+	var splash_screens := [Screen.START, Screen.GAMEOVER, Screen.VERSUS, Screen.VS_JOIN, Screen.VS_WAIT, Screen.VS_INFO, Screen.VS_LAN_JOIN, Screen.VS_LAN_WAIT]
 	_bg.visible = _screen in splash_screens
 	_backdrop.visible = _bg.visible
 	_bg.modulate = Color(0.6, 0.6, 0.66)
@@ -739,8 +854,8 @@ func _build() -> void:
 			_title("TETRIS", 52)
 			_gap(10)
 			_button("Play", play_pressed.emit)
-			if versus_available():
-				_button("Versus Online", show_versus)
+			if versus_available() or NetLink.lan_possible():
+				_button("Versus", show_versus)
 			_button("How to Play", func(): show_help(Screen.START))
 			_button("Settings", func(): show_settings(Screen.START))
 			_exit_button()
@@ -775,6 +890,10 @@ func _build() -> void:
 			_vs_result_screen()
 		Screen.VS_INFO:
 			_vs_info_screen()
+		Screen.VS_LAN_JOIN:
+			_vs_lan_join_screen()
+		Screen.VS_LAN_WAIT:
+			_vs_lan_wait_screen()
 	_focus_default.call_deferred()
 
 

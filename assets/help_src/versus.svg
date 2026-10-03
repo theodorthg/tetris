@@ -2,9 +2,9 @@
 <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f121b"/><stop offset="1" stop-color="#0a0c13"/></linearGradient><marker id="ah" markerUnits="userSpaceOnUse" markerWidth="40" markerHeight="40" refX="10" refY="20" orient="auto"><path d="M0,0 L40,20 L0,40 z" fill="#f0c02a"/></marker></defs>
 <rect width="1280" height="960" fill="url(#bg)"/>
 <rect x="18" y="18" width="1244" height="924" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
-<text x="640" y="96" text-anchor="middle" font-size="60" font-weight="700" fill="#eef2fa" letter-spacing="5">VERSUS ONLINE</text>
+<text x="640" y="96" text-anchor="middle" font-size="60" font-weight="700" fill="#eef2fa" letter-spacing="5">VERSUS</text>
 <rect x="512" y="116" width="256" height="4" rx="2" fill="#f0c02a"/>
-<text x="640" y="170" text-anchor="middle" font-size="38" fill="#9fb0cc">two devices · the same pieces · last one standing wins</text>
+<text x="640" y="170" text-anchor="middle" font-size="38" fill="#9fb0cc">two devices · online or in your LAN · last one standing wins</text>
 <rect x="90" y="210" width="320" height="384" fill="#0a0c13" stroke="#ffffff" stroke-opacity="0.25" stroke-width="3"/>
 <line x1="122" y1="210" x2="122" y2="594" stroke="#ffffff" stroke-opacity="0.05"/>
 <line x1="154" y1="210" x2="154" y2="594" stroke="#ffffff" stroke-opacity="0.05"/>
@@ -88,5 +88,5 @@
 <rect x="90" y="700" width="1100" height="210" rx="14" fill="#212a38" fill-opacity="0.6" stroke="#2c3547" stroke-width="2"/>
 <text x="125" y="760" font-size="35" fill="#eef2fa"><tspan font-weight="700" fill="#f0c02a">Send:</tspan>  2 lines → 1   ·   3 → 2   ·   Tetris → 4   ·   T-spin 2 / 4 / 6</text>
 <text x="125" y="820" font-size="35" fill="#c7d2e6"><tspan font-weight="700" fill="#f23333">Red bar</tspan> = garbage on its way. Clear lines first to cancel it.</text>
-<text x="125" y="880" font-size="35" fill="#c7d2e6"><tspan font-weight="700" fill="#eef2fa">Host</tspan> gets a 4-letter code, the other one <tspan font-weight="700" fill="#eef2fa">joins</tspan> with it.</text>
+<text x="125" y="880" font-size="35" fill="#c7d2e6"><tspan font-weight="700" fill="#eef2fa">Online:</tspan> a 4-letter code · <tspan font-weight="700" fill="#eef2fa">LAN:</tspan> the game shows up by itself.</text>
 </svg>

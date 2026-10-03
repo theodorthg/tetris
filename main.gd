@@ -195,9 +195,11 @@ func _layout() -> void:
 	# versus: the opponent's well — half size beside the board when there is
 	# room (wide window), else small in the HUD band right of the score
 	if _vs_mode:
-		var mc := maxf(floorf(cell * 0.5), 5.0)
+		# beside the board at half size, or smaller if that's what fits
+		# (3:4 tablet: ~9 px cells), from 7 px cells on; else in the HUD band
 		var room := vp.x - right - (wx + board_w) - MARGIN
-		_mini_side = room >= mc * Playfield.COLS + 24.0
+		var mc := minf(floorf(cell * 0.5), floorf((room - 24.0) / Playfield.COLS))
+		_mini_side = mc >= 7.0
 		if _mini_side:
 			_mini_rect = Rect2(wx + board_w + 16.0, wy + 24.0, mc * Playfield.COLS, mc * Playfield.ROWS)
 		else:

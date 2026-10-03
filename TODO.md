@@ -17,13 +17,21 @@ Ideen für später (Einschätzung 2026-10-03, noch nicht beauftragt):
       broesel.net (Spiel-Kennung „tetris“), auch im Browser. Revanche,
       Pause für beide, Stand „You 2 : 1 Opponent“. Getestet lokal (zwei
       Fenster) und RG552 ↔ Linux-PC über broesel.net.
-- [ ] Versus: eigene bebilderte Hilfeseite (Müllreihen, rote Anzeige,
-      Mini-Feld) — bisher nur der Erklärtext im Versus-Menü.
+- [x] v1.1.1: Versus-Hilfeseite `versus` (beide Hilfe-Folgen, vor „Goal“):
+      eigenes Feld mit 2 Reihen → Pfeil → Gegner mit grauen Müllreihen +
+      roter Leiste, Angriffstabelle, Host/Join.
 - [ ] Versus im LAN (ohne Server, wie mario-clone v1.8) — bei Bedarf.
-- [ ] Gamepad: das Startmenü (und die übrigen alten Menüs) hat keinen
-      Standard-Fokus — auf dem RG552 kommt man nur per Touch hinein
-      (gefunden beim Versus-Test 2026-10-03; die neuen Versus-Bildschirme
-      setzen den Fokus schon). Globale Vorgabe 18.
+- [x] v1.1.1 Gamepad in allen Menüs (am RG552 mit echten Pad-Signalen
+      geprüft): `ui_accept`/`ui_cancel` hatten keine Pad-Belegung (A/B
+      ergänzt, device -1); jeder Bildschirm bekommt einen Startfokus
+      (`Ui._focus_default`), Fokus kehrt auf den Knopf zurück, von dem man
+      kam (`_last_btn`), hoch/runter laufen um, B = zurück, A bestätigt
+      Eingabefelder, Hilfe blättert per Steuerkreuz, Pad-Knopf überspringt
+      den Splash. „Start level“ ist ein Regler statt SpinBox (die SpinBox
+      behielt hoch/runter für sich).
+- [ ] Hilfeseite „Keyboard“ zeigt kein Gamepad (globale Vorgabe 15:
+      D-Pad + A/B/X/Y/Start einzeichnen) — A Hard-Drop, B/X drehen, Y Hold,
+      Start Pause.
 - [ ] Versus lokal am PC: zwei Felder nebeneinander → braucht ein breites
       Fenster (globale Vorgabe 2: Splitscreen = Querformat).
 - [ ] Zusätzliche Einzelspieler-Modi: Sprint (40 Reihen auf Zeit), Ultra

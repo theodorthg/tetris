@@ -3,7 +3,7 @@
 Ergänzt die übergeordnete `CLAUDE.md` unter
 `~/GodotDev/learn_2d_gamedev_godot_4_0.57.0_linux/`.
 
-**Stand: v1.1.0** — Online-Versus (siehe unten). Davor **v1.0.4** (`config/version`), Tag `v1.0.4` — Windows-CI grün, GitHub-Release
+**Stand: v1.1.1** — Online-Versus (v1.1.0) + Gamepad in allen Menüs und Versus-Hilfe (v1.1.1). Davor **v1.0.4** (`config/version`), Tag `v1.0.4` — Windows-CI grün, GitHub-Release
 mit `tetris-windows-v1.0.4.zip`. Neu seit v1.0.3: Tastenbelegung (Settings →
 Controls), Line-Clear-Flash, T-Spin (Erkennung + Scoring + Flash-Text), Web-PWA
 entfernt, Hilfe-Bilder vergrößert (grau 40 px / Zwischenüberschriften 42 px) &
@@ -240,11 +240,27 @@ Gamepad-Bindings bleiben unberührt.
   Host / Join with a code / Back; Warten mit großem Code; Ergebnis
   YOU WIN / YOU LOSE + Stand + Rematch/Leave; Pause im Versus mit „Leave
   the match“ statt Restart/Exit. Keine Bestenliste für Versus-Runden.
+- **v1.1.1**: Versus-Hilfeseite (`assets/help_src/versus.svg`, Python-
+  generiert, Inkscape → `versus.png`); Gegner-Mini-Feld neben dem Feld
+  auch in kleineren Zellen (ab 7 px, 3:4-Tablet ~9 px) statt im engen
+  Kopfband. Gamepad in allen Menüs: siehe „Gamepad-Menüs“ unten.
 - **Test**: `tools/vstest.gd` (host/guest, zwei Fenster, lokaler Relay
   `cd ../mario-clone/server && PORT=8765 node relay.js`,
   `TETRIS_RELAY=ws://127.0.0.1:8765`), Raum-Code über `room.txt`. Der Gast
   kann auch gegen ein echtes Gerät spielen (Code in `room.txt` schreiben,
   ohne `TETRIS_RELAY` → broesel.net).
+
+## Gamepad-Menüs (v1.1.1, 2026-10-03)
+
+`ui_accept`/`ui_cancel` mit Pad A/B (device -1) in `project.godot` (per
+Skript gesetzt, nicht von Hand). `ui.gd`: `_clear_box()` entfernt die alten
+Knöpfe sofort (`remove_child`), `_focus_default()` (deferred nach jedem
+`_build`) fokussiert den Knopf, von dem man kam (`_last_btn[screen]`), sonst
+den ersten; Umlauf oben/unten ab 3 Knöpfen. In `_unhandled_input`: Pad-B →
+`handle_back()`, Pad-A auf einem `LineEdit` → `text_submitted`; Hilfe:
+`ui_left`/`ui_right` blättern, A/B schließen. Test am RG552 mit echten
+Pad-Signalen: `sendevent /dev/input/event3` (BTN_SOUTH 304 = A, BTN_EAST
+305 = B, BTN_START 315, ABS_HAT0X 16 / HAT0Y 17).
 
 ## Offen / später
 

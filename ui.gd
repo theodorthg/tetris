@@ -59,12 +59,14 @@ const HELP_MOUSE := [
 	{"file": "aim",       "title": "Aim & auto-rotate"},
 	{"file": "hud",       "title": "The buttons"},
 	{"file": "keyboard",  "title": "Keyboard"},
+	{"file": "versus",    "title": "Versus online"},
 	{"file": "goal",      "title": "Goal & scoring"},
 ]
 const HELP_TOUCH := [
 	{"file": "swipe",     "title": "Swipe & tap"},
 	{"file": "aim-touch", "title": "Aim & auto-rotate"},
 	{"file": "hud",       "title": "The buttons"},
+	{"file": "versus",    "title": "Versus online"},
 	{"file": "goal",      "title": "Goal & scoring"},
 ]
 const HELP_SWIPE_MIN := 60.0
@@ -101,6 +103,7 @@ var _help_swipe_x := 0.0
 
 var _vs := {}            ## versus screen data: code, won, wins, losses, mine, theirs, text, note
 var _vs_pause := false   ## the pause menu belongs to a versus round
+var _last_btn := {}      ## screen -> text of the button pressed there (focus returns to it)
 var _capturing := ""     ## action currently waiting for a key press, or ""
 
 
@@ -245,7 +248,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _screen == Screen.SPLASH:
 		var go: bool = (event is InputEventKey and event.pressed and not event.echo) \
 			or (event is InputEventScreenTouch and event.pressed) \
-			or (event is InputEventMouseButton and event.pressed)
+			or (event is InputEventMouseButton and event.pressed) \
+			or (event is InputEventJoypadButton and event.pressed)
 		if go:
 			_finish_splash()
 			get_viewport().set_input_as_handled()
@@ -253,6 +257,19 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if _screen == Screen.HELP:
 		_help_input(event)
+
+	# gamepad: B goes back (Esc already does via pause_game in main), A on a
+	# text field submits it (LineEdit only reacts to Enter by itself)
+	if event is InputEventJoypadButton and event.pressed and visible:
+		if event.is_action_pressed("ui_cancel") and _screen != Screen.HELP:
+			if handle_back():
+				get_viewport().set_input_as_handled()
+				return
+		var fo := get_viewport().gui_get_focus_owner()
+		if event.is_action_pressed("ui_accept") and fo is LineEdit:
+			(fo as LineEdit).text_submitted.emit((fo as LineEdit).text)
+			get_viewport().set_input_as_handled()
+			return
 
 	if _capturing != "" and event is InputEventKey and event.pressed and not event.echo:
 		get_viewport().set_input_as_handled()
@@ -265,6 +282,15 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _help_input(event: InputEvent) -> void:
+	# gamepad: D-pad left/right turns pages, A or B closes (v1.1)
+	if event is InputEventJoypadButton or event is InputEventJoypadMotion:
+		if event.is_action_pressed("ui_left"):
+			_help_go(-1); get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("ui_right"):
+			_help_go(1); get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_accept"):
+			_help_close(); get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_LEFT, KEY_A:
@@ -644,8 +670,47 @@ func handle_back() -> bool:
 # --- screen construction ---------------------------------------------
 
 func _clear_box() -> void:
+	# remove first: a deferred default focus in the same frame must not find
+	# (and focus) the old controls that queue_free() only drops at frame end
 	for c in _box.get_children():
+		_box.remove_child(c)
 		c.queue_free()
+
+
+# --- gamepad / keyboard focus (v1.1, global rule 18) ---------------------
+
+func _focusables() -> Array:
+	var out := []
+	for n in _box.find_children("*", "Control", true, false):
+		var c := n as Control
+		if c.focus_mode == Control.FOCUS_ALL and c.is_visible_in_tree() \
+				and not (c is BaseButton and (c as BaseButton).disabled):
+			out.append(c)
+	return out
+
+
+## Every screen starts with a focused control (the first one) unless the
+## screen already focused one itself; up/down wrap at the ends.
+func _focus_default() -> void:
+	if not visible or not _panel.visible:
+		return
+	var list := _focusables()
+	if list.is_empty():
+		return
+	if list.size() > 2:
+		var first: Control = list[0]
+		var last: Control = list[list.size() - 1]
+		first.focus_neighbor_top = first.get_path_to(last)
+		last.focus_neighbor_bottom = last.get_path_to(first)
+	var cur := get_viewport().gui_get_focus_owner()
+	if cur and cur in list:
+		return
+	var back_to := str(_last_btn.get(_screen, ""))
+	for c in list:
+		if back_to != "" and c is Button and (c as Button).text == back_to:
+			(c as Control).grab_focus()
+			return
+	(list[0] as Control).grab_focus()
 
 
 func _build() -> void:
@@ -708,6 +773,7 @@ func _build() -> void:
 			_vs_result_screen()
 		Screen.VS_INFO:
 			_vs_info_screen()
+	_focus_default.call_deferred()
 
 
 func _game_over_screen() -> void:
@@ -747,6 +813,7 @@ func _build_name_entry() -> void:
 	edit.text_submitted.connect(func(_t): _commit_name(edit.text))
 	_button("OK", func(): _commit_name(edit.text))
 	edit.call_deferred("grab_focus")
+	_focus_default.call_deferred()
 
 
 func _commit_name(name: String) -> void:
@@ -769,15 +836,26 @@ func _settings_screen() -> void:
 	_gap(4)
 
 	# Start level 1..15
+	# (a slider, not a SpinBox: the SpinBox kept D-pad up/down for itself,
+	# so a gamepad got stuck on this row — v1.1)
 	var lvl_row := _row("Start level")
-	var lvl := SpinBox.new()
+	var lvl := HSlider.new()
 	lvl.min_value = 1
 	lvl.max_value = 15
+	lvl.step = 1
 	lvl.value = int(settings.start_level)
-	lvl.custom_minimum_size = Vector2(96, 40)
+	lvl.custom_minimum_size = Vector2(120, 40)
+	lvl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	lvl_row.add_child(lvl)
+	var lvl_lbl := Label.new()
+	lvl_lbl.text = "%d" % int(settings.start_level)
+	lvl_lbl.custom_minimum_size = Vector2(28, 0)
+	lvl_lbl.add_theme_font_size_override("font_size", 17)
+	lvl_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lvl_row.add_child(lvl_lbl)
 	lvl.value_changed.connect(func(v):
 		settings.start_level = int(v)
+		lvl_lbl.text = "%d" % int(v)
 		_apply_settings())
 
 	# Ghost piece on/off
@@ -990,6 +1068,8 @@ func _button(text: String, on_press: Callable) -> Button:
 			sb.set_border_width_all(1)
 		b.add_theme_stylebox_override(state, sb)
 	_box.add_child(b)
+	var from := _screen
+	b.pressed.connect(func(): _last_btn[from] = text)
 	b.pressed.connect(on_press)
 	return b
 

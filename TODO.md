@@ -29,9 +29,11 @@ Ideen für später (Einschätzung 2026-10-03, noch nicht beauftragt):
       Eingabefelder, Hilfe blättert per Steuerkreuz, Pad-Knopf überspringt
       den Splash. „Start level“ ist ein Regler statt SpinBox (die SpinBox
       behielt hoch/runter für sich).
-- [ ] Hilfeseite „Keyboard“ zeigt kein Gamepad (globale Vorgabe 15:
-      D-Pad + A/B/X/Y/Start einzeichnen) — A Hard-Drop, B/X drehen, Y Hold,
-      Start Pause.
+- [x] v1.1.2: eigene Hilfeseite „Gamepad“ (beide Hilfe-Folgen, nach
+      Keyboard bzw. The buttons): gezeichnetes Pad mit Steuerkreuz, A/B/X/Y,
+      Start und Belegung, Menü-Bedienung, Hinweis „Knöpfe nach Lage, nicht
+      nach Aufdruck“ (Nintendo-Layout wie Anbernic: unten steht „B“).
+      Tastaturseite verweist darauf.
 - [ ] Versus lokal am PC: zwei Felder nebeneinander → braucht ein breites
       Fenster (globale Vorgabe 2: Splitscreen = Querformat).
 - [ ] Zusätzliche Einzelspieler-Modi: Sprint (40 Reihen auf Zeit), Ultra

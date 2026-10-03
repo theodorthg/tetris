@@ -3,7 +3,7 @@
 Ergänzt die übergeordnete `CLAUDE.md` unter
 `~/GodotDev/learn_2d_gamedev_godot_4_0.57.0_linux/`.
 
-**Stand: v1.1.1** — Online-Versus (v1.1.0) + Gamepad in allen Menüs und Versus-Hilfe (v1.1.1). Davor **v1.0.4** (`config/version`), Tag `v1.0.4` — Windows-CI grün, GitHub-Release
+**Stand: v1.1.2** — Online-Versus (v1.1.0), Gamepad in allen Menüs + Versus-Hilfe (v1.1.1), Hilfeseite „Gamepad“ (v1.1.2). Davor **v1.0.4** (`config/version`), Tag `v1.0.4` — Windows-CI grün, GitHub-Release
 mit `tetris-windows-v1.0.4.zip`. Neu seit v1.0.3: Tastenbelegung (Settings →
 Controls), Line-Clear-Flash, T-Spin (Erkennung + Scoring + Flash-Text), Web-PWA
 entfernt, Hilfe-Bilder vergrößert (grau 40 px / Zwischenüberschriften 42 px) &
@@ -160,8 +160,12 @@ Vollbild-Blättern in `ui.gd` (`show_help` / `_build_help_overlay` / `_help_go`)
   Mausrad, den Pfeil-Buttons, Touch-Swipe. `Esc`/`Space`/`Done` → zurück ins
   aufrufende Menü (Start **oder** Pause). Umlauf an.
 - Zwei Seitensätze, `main.set_help_context()` schaltet um:
-  - **Maus:** `mouse` · `aim` · `hud` · `keyboard` · `goal`
-  - **Touch:** `swipe` · `aim-touch` · `hud` · `goal`
+  - **Maus:** `mouse` · `aim` · `hud` · `keyboard` · `gamepad` · `versus` · `goal`
+  - **Touch:** `swipe` · `aim-touch` · `hud` · `gamepad` · `versus` · `goal`
+    (die Touch-Folge sieht auch das RG552 — darum dort ebenfalls `gamepad`)
+  - `versus.svg` und `gamepad.svg` sind per Python erzeugt (Kästchen,
+    Pad-Zeichnung); bei Änderungen die SVG direkt bearbeiten und mit
+    `render.sh` bzw. Inkscape neu rendern.
 - Bilder: `assets/graphics/help/<name>.png` (aus `assets/help_src/<name>.svg`,
   `render.sh`, Inkscape → PNG; `ui.gd` lädt sie on-demand per `load()`, **nicht**
   über `ResourceLoader.exists()` — das ist bei importierten Ressourcen in nativen

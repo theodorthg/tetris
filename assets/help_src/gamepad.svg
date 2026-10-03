@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="960" viewBox="0 0 1280 960" font-family="DejaVu Sans, 'Liberation Sans', sans-serif">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f121b"/><stop offset="1" stop-color="#0a0c13"/></linearGradient><linearGradient id="pad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a465e"/><stop offset="1" stop-color="#232b3b"/></linearGradient></defs>
+<rect width="1280" height="960" fill="url(#bg)"/>
+<rect x="18" y="18" width="1244" height="924" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
+<text x="640" y="102" text-anchor="middle" font-size="60" font-weight="700" fill="#eef2fa" letter-spacing="6">GAMEPAD</text>
+<rect x="536" y="122" width="208" height="4" rx="2" fill="#f0c02a"/>
+<path d="M 430 250 Q 640 220 850 250 Q 960 262 980 380 Q 1000 520 920 540 Q 860 552 800 470 L 480 470 Q 420 552 360 540 Q 280 520 300 380 Q 320 262 430 250 Z" fill="url(#pad)" stroke="#5a6a86" stroke-width="3"/>
+<line x1="396" y1="370" x2="265" y2="232" stroke="#f0c02a" stroke-width="3"/>
+<line x1="440" y1="414" x2="265" y2="600" stroke="#f0c02a" stroke-width="3"/>
+<line x1="640" y1="360" x2="640" y2="590" stroke="#f0c02a" stroke-width="3"/>
+<line x1="788" y1="370" x2="700" y2="180" stroke="#f0c02a" stroke-width="3"/>
+<line x1="840" y1="318" x2="900" y2="196" stroke="#f0c02a" stroke-width="3"/>
+<line x1="892" y1="370" x2="1030" y2="330" stroke="#f0c02a" stroke-width="3"/>
+<line x1="840" y1="422" x2="940" y2="600" stroke="#f0c02a" stroke-width="3"/>
+<path d="M 418 304 h44 v44 h44 v44 h-44 v44 h-44 v-44 h-44 v-44 h44 z" fill="#1a2030" stroke="#8fa0bc" stroke-width="2"/>
+<text x="440" y="336" text-anchor="middle" font-size="26" fill="#e8eefc">▲</text>
+<text x="440" y="424" text-anchor="middle" font-size="26" fill="#e8eefc">▼</text>
+<text x="396" y="380" text-anchor="middle" font-size="26" fill="#e8eefc">◀</text>
+<text x="484" y="380" text-anchor="middle" font-size="26" fill="#e8eefc">▶</text>
+<rect x="600" y="345" width="80" height="30" rx="15" fill="#1a2030" stroke="#8fa0bc" stroke-width="2"/>
+<text x="640" y="402" text-anchor="middle" font-size="22" fill="#9fb0cc">START</text>
+<circle cx="840" cy="422" r="30" fill="#3fd160" stroke="#0a0c13" stroke-width="3"/>
+<text x="840" y="433" text-anchor="middle" font-size="30" font-weight="700" fill="#0a0c13">A</text>
+<circle cx="892" cy="370" r="30" fill="#e5484d" stroke="#0a0c13" stroke-width="3"/>
+<text x="892" y="381" text-anchor="middle" font-size="30" font-weight="700" fill="#0a0c13">B</text>
+<circle cx="788" cy="370" r="30" fill="#4b6bd6" stroke="#0a0c13" stroke-width="3"/>
+<text x="788" y="381" text-anchor="middle" font-size="30" font-weight="700" fill="#0a0c13">X</text>
+<circle cx="840" cy="318" r="30" fill="#f0c02a" stroke="#0a0c13" stroke-width="3"/>
+<text x="840" y="329" text-anchor="middle" font-size="30" font-weight="700" fill="#0a0c13">Y</text>
+<text x="255" y="240" text-anchor="end" font-size="38" font-weight="700" fill="#eef2fa">Move</text>
+<text x="255" y="278" text-anchor="end" font-size="28" fill="#9fb0cc">◀ ▶ d-pad</text>
+<text x="255" y="608" text-anchor="end" font-size="38" font-weight="700" fill="#eef2fa">Soft drop</text>
+<text x="255" y="646" text-anchor="end" font-size="28" fill="#9fb0cc">▼ · +1 per row</text>
+<text x="640" y="630" text-anchor="middle" font-size="38" font-weight="700" fill="#eef2fa">Pause</text>
+<text x="640" y="668" text-anchor="middle" font-size="28" fill="#9fb0cc">Start</text>
+<text x="690" y="188" text-anchor="end" font-size="38" font-weight="700" fill="#eef2fa">Rotate ⟲</text>
+<text x="690" y="224" text-anchor="end" font-size="28" fill="#9fb0cc">left button</text>
+<text x="910" y="204" text-anchor="start" font-size="38" font-weight="700" fill="#eef2fa">Hold</text>
+<text x="910" y="242" text-anchor="start" font-size="28" fill="#9fb0cc">top button</text>
+<text x="1040" y="338" text-anchor="start" font-size="38" font-weight="700" fill="#eef2fa">Rotate ⟳</text>
+<text x="1040" y="376" text-anchor="start" font-size="28" fill="#9fb0cc">right button</text>
+<text x="950" y="608" text-anchor="start" font-size="38" font-weight="700" fill="#eef2fa">Hard drop</text>
+<text x="950" y="646" text-anchor="start" font-size="28" fill="#9fb0cc">bottom · +2 per row</text>
+<rect x="90" y="700" width="1100" height="200" rx="14" fill="#212a38" fill-opacity="0.6" stroke="#2c3547" stroke-width="2"/>
+<text x="125" y="758" font-size="31" fill="#eef2fa"><tspan font-weight="700" fill="#f0c02a">Menus:</tspan>  d-pad picks · bottom button = OK · right button = back</text>
+<text x="125" y="816" font-size="30" fill="#c7d2e6">Buttons go by <tspan font-weight="700" fill="#eef2fa">position</tspan>, not by their letters: on a</text>
+<text x="125" y="860" font-size="30" fill="#c7d2e6">Nintendo-style pad (e.g. Anbernic) the bottom one says “B”.</text>
+</svg>

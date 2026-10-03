@@ -59,6 +59,7 @@ const HELP_MOUSE := [
 	{"file": "aim",       "title": "Aim & auto-rotate"},
 	{"file": "hud",       "title": "The buttons"},
 	{"file": "keyboard",  "title": "Keyboard"},
+	{"file": "gamepad",   "title": "Gamepad"},
 	{"file": "versus",    "title": "Versus online"},
 	{"file": "goal",      "title": "Goal & scoring"},
 ]
@@ -66,6 +67,7 @@ const HELP_TOUCH := [
 	{"file": "swipe",     "title": "Swipe & tap"},
 	{"file": "aim-touch", "title": "Aim & auto-rotate"},
 	{"file": "hud",       "title": "The buttons"},
+	{"file": "gamepad",   "title": "Gamepad"},
 	{"file": "versus",    "title": "Versus online"},
 	{"file": "goal",      "title": "Goal & scoring"},
 ]

@@ -23,6 +23,13 @@ const SOUNDS := {
 }
 const SFX_ORDER := ["move", "drop", "hold", "line1", "lines", "over", "music"]
 
+signal mute_changed(muted: bool)
+
+## Master mute (speaker button next to Pause, key M, pad Select): mutes the
+## whole Master bus, so un-muting restores the exact previous mix. Persisted in
+## settings.cfg [sound] muted (independent of CALIB_VERSION).
+var muted := false
+
 var _vol: Dictionary = {}          ## key -> int 0..100
 var _players: Dictionary = {}      ## key -> AudioStreamPlayer
 var _music_on := false
@@ -40,6 +47,9 @@ func _ready() -> void:
 		add_child(p)
 		_players[key] = p
 	_load()
+	var mc := ConfigFile.new()
+	if mc.load(CFG_PATH) == OK:
+		set_muted(bool(mc.get_value("sound", "muted", false)), false)
 
 
 # --- public ---------------------------------------------------------
@@ -53,6 +63,21 @@ func play(key: String) -> void:
 		return
 	p.volume_db = _db_for(key, v)
 	p.play()
+
+
+func set_muted(on: bool, save := true) -> void:
+	muted = on
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), on)
+	if save:
+		var cf := ConfigFile.new()
+		cf.load(CFG_PATH)
+		cf.set_value("sound", "muted", on)
+		cf.save(CFG_PATH)
+	mute_changed.emit(on)
+
+
+func toggle_mute() -> void:
+	set_muted(not muted)
 
 
 func set_volume(key: String, pct: int) -> void:

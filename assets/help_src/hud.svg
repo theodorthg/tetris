@@ -9,7 +9,7 @@
 
   <text x="640" y="96" text-anchor="middle" font-size="60" font-weight="700" fill="#eef2fa" letter-spacing="5">THE BUTTONS</text>
   <rect x="512" y="116" width="256" height="4" rx="2" fill="#f0c02a"/>
-  <text x="640" y="170" text-anchor="middle" font-size="40" fill="#9fb0cc">two frosted icons in the top corners — never over the field</text>
+  <text x="640" y="170" text-anchor="middle" font-size="40" fill="#9fb0cc">frosted icons in the top band — never over the field</text>
 
   <!-- HOLD -->
   <g transform="translate(240 292)">
@@ -25,16 +25,25 @@
   <text x="350" y="400" font-size="40" fill="#9fb0cc">keyboard: C / End   ·   mouse: right-click</text>
 
   <!-- PAUSE -->
-  <g transform="translate(240 560)">
+  <g transform="translate(240 486)">
     <circle cx="0" cy="0" r="72" fill="#d9e6ff" fill-opacity="0.14" stroke="#d9e6ff" stroke-opacity="0.35" stroke-width="3"/>
     <circle cx="0" cy="0" r="44" fill="none" stroke="#e8eefc" stroke-width="6"/>
     <rect x="-19" y="-23" width="15" height="46" rx="4" fill="#e8eefc"/>
     <rect x="4" y="-23" width="15" height="46" rx="4" fill="#e8eefc"/>
   </g>
-  <text x="350" y="520" font-size="46" font-weight="700" fill="#eef2fa">PAUSE</text>
-  <text x="350" y="574" font-size="40" fill="#c7d2e6">Open the menu: resume, settings,</text>
-  <text x="350" y="620" font-size="40" fill="#c7d2e6">how to play, restart.</text>
-  <text x="350" y="668" font-size="40" fill="#9fb0cc">keyboard: Esc / P</text>
+  <text x="350" y="446" font-size="46" font-weight="700" fill="#eef2fa">PAUSE</text>
+  <text x="350" y="500" font-size="40" fill="#c7d2e6">Open the menu: resume, settings,</text>
+  <text x="350" y="546" font-size="40" fill="#c7d2e6">how to play, restart.</text>
+  <text x="350" y="594" font-size="40" fill="#9fb0cc">keyboard: Esc / P</text>
+
+  <!-- MUTE -->
+  <g transform="translate(240 694)">
+    <circle cx="0" cy="0" r="72" fill="#d9e6ff" fill-opacity="0.14" stroke="#d9e6ff" stroke-opacity="0.35" stroke-width="3"/>
+    <path d="M-36 -14 h18 l24 -22 v72 l-24 -22 h-18 z" fill="#e8eefc"/>
+    <path d="M18 -18 q14 18 0 36 M30 -30 q24 30 0 60" fill="none" stroke="#e8eefc" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <text x="350" y="676" font-size="46" font-weight="700" fill="#eef2fa">MUTE</text>
+  <text x="350" y="722" font-size="38" fill="#c7d2e6">Sound on / off.  keyboard: M  ·  pad: Select</text>
 
   <!-- where they sit on screen -->
   <rect x="546" y="762" width="188" height="150" rx="6" fill="#0c0f17" stroke="#2c3547" stroke-width="3"/>

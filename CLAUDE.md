@@ -297,3 +297,13 @@ Pad-Signalen: `sendevent /dev/input/event3` (BTN_SOUTH 304 = A, BTN_EAST
 Bei Nutzung der Aseprite-MCP-Pro-Tools (`mcp__aseprite-mcp-pro__*`) dem
 Pixel-Art-Skill-Guide folgen:
 @/home/bernd/GodotDev/learn_2d_gamedev_godot_4_0.57.0_linux/aseprite-mcp-pro-server/skills.md
+
+## Mute-Button (v1.3.0)
+
+`mute_button.gd` (`MuteButton`, frostig wie `PauseButton`), links neben dem
+Pause-Button, Position/Größe explizit in `main.gd::_layout()` (nie Anker).
+Score/LEVEL/LINES zentrieren sich in der Lücke zwischen Hold-Kasten und
+Mute-Button (`left_lim`/`right_lim`). `Snd.set_muted()/toggle_mute()` +
+Signal `mute_changed`; Action `mute` (M + Pad-Select) steht in `project.godot`
+und greift in jedem Zustand (`main.gd::_unhandled_input`). Hilfe: `hud.svg`,
+`keyboard.svg`, `gamepad.svg`.

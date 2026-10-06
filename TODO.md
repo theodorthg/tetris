@@ -6,6 +6,8 @@ offene Punkte stehen ggf. noch in `CLAUDE.md`.
 
 ## Offen
 
+- [x] 2026-10-06 v1.3.0 Mute-Button (globale CLAUDE.md Punkt 21): frostiger Lautsprecher-Button links neben Pause (`mute_button.gd`, feste Position in `main.gd::_layout()`), Taste M + Pad-Select (Action `mute` in project.godot), `Snd.set_muted()` (Master-Bus, `[sound] muted` in settings.cfg); Score/LEVEL/LINES werden in der Lücke zwischen Hold-Kasten und Mute-Button zentriert (rücken etwas zur Mitte); Hilfeseiten Buttons/Keyboard/Gamepad ergänzt.
+
 - [ ] Alte, von Hand hochgeladene Dateien auf itch.io löschen (macht der Nutzer: https://itch.io/game/edit/…, Seite `tetris-clone`) und beim Upload des Channels `web` „This file will be played in the browser“ setzen.
 
 Ideen für später (Einschätzung 2026-10-03, noch nicht beauftragt):

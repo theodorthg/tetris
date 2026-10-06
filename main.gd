@@ -40,6 +40,7 @@ var _score_label: Label
 var _level_label: Label
 var _lines_label: Label
 var _pause_btn: PauseButton
+var _mute_btn: MuteButton
 var _hold_btn: HoldButton
 
 var _hold_box := Rect2()
@@ -176,14 +177,22 @@ func _layout() -> void:
 	_hold_btn.position = Vector2(left_cx - pb * 0.5, hud_y)
 	_pause_btn.size = Vector2(pb, pb)
 	_pause_btn.position = Vector2(right_cx - pb * 0.5, hud_y)
+	# mute button: left of pause, explicit size + position (never anchors)
+	var mute_cx := right_cx - pb
+	_mute_btn.size = Vector2(pb, pb)
+	_mute_btn.position = Vector2(mute_cx - pb * 0.5, hud_y)
 	_hold_box = Rect2(left_cx - box.x * 0.5, hud_y + pb - 2, box.x, box.y)
 	_next_box = Rect2(right_cx - box.x * 0.5, hud_y + pb - 2, box.x, box.y)
 
 	# Score / level / lines: centred on the board, but kept inside the gap between
 	# the two boxes so a short-and-wide window (small board, boxes close in) can't
 	# let the text run under them.
-	var sx := wx + board_w * 0.5
-	var inner := maxf((right_cx - left_cx) - box.x - 16.0, 160.0)
+	# The block is centred in the free gap between the HOLD box and the MUTE
+	# button (so with the extra button it moves a little towards the centre).
+	var left_lim := left_cx + box.x * 0.5 + 8.0
+	var right_lim := mute_cx - pb * 0.5 + 6.0
+	var sx := (left_lim + right_lim) * 0.5
+	var inner := maxf(right_lim - left_lim, 150.0)
 	var lbl_gap := 11.0   # half the space between the LEVEL and LINES columns
 	_score_label.position = Vector2(sx - inner * 0.5, hud_y + 4)
 	_score_label.size = Vector2(inner, 36)
@@ -242,10 +251,17 @@ func _build() -> void:
 	_pause_btn = PauseButton.new()
 	_pause_btn.tapped.connect(func(): _pause())
 	add_child(_pause_btn)
+	_mute_btn = MuteButton.new()
+	_mute_btn.tapped.connect(_toggle_mute)
+	add_child(_mute_btn)
+	if _snd:
+		_mute_btn.muted = bool(_snd.muted)
+		_snd.mute_changed.connect(func(on: bool) -> void: _mute_btn.muted = on)
 	_hold_btn = HoldButton.new()
 	_hold_btn.tapped.connect(func(): _field.hold())
 	add_child(_hold_btn)
 	_pause_btn.visible = false
+	_mute_btn.visible = false
 	_hold_btn.visible = false
 
 	_ui = Ui.new()
@@ -332,6 +348,7 @@ func _enter_touch_mode() -> void:
 
 func _hud_buttons(vis: bool) -> void:
 	_pause_btn.visible = vis
+	_mute_btn.visible = vis
 	_hold_btn.visible = vis
 
 
@@ -584,9 +601,20 @@ func _update_hud() -> void:
 
 # --- input -------------------------------------------------------------
 
+func _toggle_mute() -> void:
+	if _snd:
+		_snd.toggle_mute()
+
+
 func _unhandled_input(e: InputEvent) -> void:
 	if (e is InputEventScreenTouch or e is InputEventScreenDrag) and not _touch_mode:
 		_enter_touch_mode()
+
+	# M / pad Select: sound on/off, in every state (menus and pause included)
+	if e.is_action_pressed("mute") and not e.is_echo():
+		_toggle_mute()
+		get_viewport().set_input_as_handled()
+		return
 
 	if e.is_action_pressed("pause_game"):
 		if _state == State.PLAYING:

@@ -32,3 +32,7 @@ templates.tpz
 # deliberate end-of-project "Claude Code transcript.pdf" is still committable.
 Claude Code transcript — *.pdf
 Claude Code transcript*.html
+
+# Signing keys never belong in the repo (release key was leaked 2026-10, replaced)
+*.keystore
+*.jks
